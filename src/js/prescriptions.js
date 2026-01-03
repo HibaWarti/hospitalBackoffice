@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const exportBtn = document.getElementById('export-prescriptions');
   const pSelect = document.getElementById('r-patient');
   const dSelect = document.getElementById('r-doctor');
+  const searchInput = document.getElementById('r-search');
+  const sortField = document.getElementById('r-sort');
+  const sortOrder = document.getElementById('r-order');
 
   function loadRefs() {
     const patients = list(HL_PATIENTS);
@@ -28,8 +31,37 @@ document.addEventListener('DOMContentLoaded', () => {
     return d ? d.nom : '';
   }
 
+  function applyFilterSort(items) {
+    const q = (searchInput && searchInput.value || '').toLowerCase();
+    let res = items;
+    if (q) {
+      res = res.filter((r) =>
+        [patientName(r.patientId), doctorName(r.doctorId), Array.isArray(r.meds) ? r.meds.join(', ') : r.meds, r.duration, r.notes || '']
+          .some((v) => String(v || '').toLowerCase().includes(q))
+      );
+    }
+    const field = sortField && sortField.value;
+    const order = (sortOrder && sortOrder.value) === 'desc' ? -1 : 1;
+    if (field) {
+      res = res.slice().sort((a, b) => {
+        function val(x) {
+          if (field === 'patient') return patientName(x.patientId);
+          if (field === 'doctor') return doctorName(x.doctorId);
+          if (field === 'duration') return x.duration;
+          return '';
+        }
+        const va = val(a);
+        const vb = val(b);
+        if (va < vb) return -1 * order;
+        if (va > vb) return 1 * order;
+        return 0;
+      });
+    }
+    return res;
+  }
+
   function render() {
-    const items = list(HL_PRESCRIPTIONS);
+    const items = applyFilterSort(list(HL_PRESCRIPTIONS));
     tbody.innerHTML = items
       .map(
         (r) =>
@@ -84,6 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
   exportBtn.addEventListener('click', () => {
     downloadCSV('prescriptions.csv', list(HL_PRESCRIPTIONS));
   });
+
+  if (searchInput) searchInput.addEventListener('input', render);
+  if (sortField) sortField.addEventListener('change', render);
+  if (sortOrder) sortOrder.addEventListener('change', render);
 
   loadRefs();
   render();

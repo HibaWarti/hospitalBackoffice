@@ -3,68 +3,70 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hospital • Patients</title>
+  <title>HLSpital • Patients</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
-  <nav>
-    <a href="dashboard.html">Dashboard</a> |
-    <a href="patients.html">Patients</a> |
-    <a href="doctors.html">Médecins</a> |
-    <a href="appointments.html">Rendez-vous</a> |
-    <a href="prescriptions.html">Prescriptions</a> |
-    <a href="services.html">Services</a> |
-    <a href="index.html">Déconnexion</a>
-  </nav>
-  <h1>Patients</h1>
-  <div>
-    <input type="text" id="p-search" placeholder="Rechercher">
-    <select id="p-sort">
-      <option value="">Trier par</option>
-      <option value="nom">Nom</option>
-      <option value="age">Âge</option>
-      <option value="sexe">Sexe</option>
-    </select>
-    <select id="p-order">
-      <option value="asc">Asc</option>
-      <option value="desc">Desc</option>
-    </select>
+<body class="min-h-screen bg-gray-50">
+  <nav></nav>
+  <div class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+      <i data-lucide="users" class="w-5 h-5 text-blue-600"></i>
+      Patients
+    </h1>
+    <div class="bg-white rounded-lg shadow p-4 mb-4 flex flex-wrap items-center gap-3">
+      <input class="border rounded px-3 py-2 flex-1 min-w-[200px]" type="text" id="p-search" placeholder="Rechercher">
+      <select class="border rounded px-3 py-2" id="p-sort">
+        <option value="">Trier par</option>
+        <option value="nom">Nom</option>
+        <option value="age">Âge</option>
+        <option value="sexe">Sexe</option>
+      </select>
+      <select class="border rounded px-3 py-2" id="p-order">
+        <option value="asc">Asc</option>
+        <option value="desc">Desc</option>
+      </select>
+      <button type="button" id="export-patients" class="ml-auto bg-gray-100 hover:bg-gray-200 text-gray-800 rounded px-3 py-2">Exporter CSV</button>
+    </div>
+    <form id="patient-form" class="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-1 md:grid-cols-6 gap-3">
+      <input class="border rounded px-3 py-2" type="text" id="p-nom" placeholder="Nom" required>
+      <input class="border rounded px-3 py-2" type="number" id="p-age" placeholder="Âge" required>
+      <select class="border rounded px-3 py-2" id="p-sexe" required>
+        <option value="">Sexe</option>
+        <option value="M">M</option>
+        <option value="F">F</option>
+      </select>
+      <input class="border rounded px-3 py-2" type="text" id="p-tel" placeholder="Téléphone" required>
+      <input class="border rounded px-3 py-2 md:col-span-2" type="text" id="p-adr" placeholder="Adresse" required>
+      <div class="md:col-span-6 flex gap-3">
+        <button type="submit" class="bg-blue-600 text-white rounded px-3 py-2">Ajouter</button>
+      </div>
+    </form>
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <table class="min-w-full">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="text-left px-4 py-2">Nom</th>
+            <th class="text-left px-4 py-2">Âge</th>
+            <th class="text-left px-4 py-2">Sexe</th>
+            <th class="text-left px-4 py-2">Téléphone</th>
+            <th class="text-left px-4 py-2">Adresse</th>
+            <th class="text-left px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
-  <form id="patient-form">
-    <input type="text" id="p-nom" placeholder="Nom" required>
-    <input type="number" id="p-age" placeholder="Âge" required>
-    <select id="p-sexe" required>
-      <option value="">Sexe</option>
-      <option value="M">M</option>
-      <option value="F">F</option>
-    </select>
-    <input type="text" id="p-tel" placeholder="Téléphone" required>
-    <input type="text" id="p-adr" placeholder="Adresse" required>
-    <button type="submit">Ajouter</button>
-    <button type="button" id="export-patients">Exporter CSV</button>
-  </form>
-  <table border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>Nom</th>
-        <th>Âge</th>
-        <th>Sexe</th>
-        <th>Téléphone</th>
-        <th>Adresse</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-    </tbody>
-  </table>
   <script src="src/js/auth.js"></script>
   <script src="src/js/guard.js"></script>
   <script src="src/js/store.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@faker-js/faker@8.4.1/dist/faker.umd.min.js"></script>
   <script src="src/js/data.js"></script>
   <script src="src/js/patients.js"></script>
   <script>
     requireAuth();
     mountNav();
+    lucide.createIcons();
   </script>
 </body>
 </html>

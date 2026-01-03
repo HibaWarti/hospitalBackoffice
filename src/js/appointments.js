@@ -8,6 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const pSelect = document.getElementById('a-patient');
   const dSelect = document.getElementById('a-doctor');
   const sSelect = document.getElementById('a-status');
+  const searchInput = document.getElementById('a-search');
+  const sortField = document.getElementById('a-sort');
+  const sortOrder = document.getElementById('a-order');
 
   function loadRefs() {
     const patients = list(HL_PATIENTS);
@@ -29,8 +32,39 @@ document.addEventListener('DOMContentLoaded', () => {
     return d ? d.nom : '';
   }
 
+  function applyFilterSort(items) {
+    const q = (searchInput && searchInput.value || '').toLowerCase();
+    let res = items;
+    if (q) {
+      res = res.filter((a) =>
+        [patientName(a.patientId), doctorName(a.doctorId), a.date, a.time, a.status]
+          .some((v) => String(v || '').toLowerCase().includes(q))
+      );
+    }
+    const field = sortField && sortField.value;
+    const order = (sortOrder && sortOrder.value) === 'desc' ? -1 : 1;
+    if (field) {
+      res = res.slice().sort((a, b) => {
+        function val(x) {
+          if (field === 'patient') return patientName(x.patientId);
+          if (field === 'doctor') return doctorName(x.doctorId);
+          if (field === 'date') return x.date;
+          if (field === 'time') return x.time;
+          if (field === 'status') return x.status;
+          return '';
+        }
+        const va = val(a);
+        const vb = val(b);
+        if (va < vb) return -1 * order;
+        if (va > vb) return 1 * order;
+        return 0;
+      });
+    }
+    return res;
+  }
+
   function render() {
-    const items = list(HL_APPOINTMENTS);
+    const items = applyFilterSort(list(HL_APPOINTMENTS));
     tbody.innerHTML = items
       .map(
         (a) =>
@@ -85,6 +119,10 @@ document.addEventListener('DOMContentLoaded', () => {
   exportBtn.addEventListener('click', () => {
     downloadCSV('rendez-vous.csv', list(HL_APPOINTMENTS));
   });
+
+  if (searchInput) searchInput.addEventListener('input', render);
+  if (sortField) sortField.addEventListener('change', render);
+  if (sortOrder) sortOrder.addEventListener('change', render);
 
   loadRefs();
   render();

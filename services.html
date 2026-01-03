@@ -3,50 +3,52 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hospital • Services</title>
+  <title>HLSpital • Services</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
-  <nav>
-    <a href="dashboard.html">Dashboard</a> |
-    <a href="patients.html">Patients</a> |
-    <a href="doctors.html">Médecins</a> |
-    <a href="appointments.html">Rendez-vous</a> |
-    <a href="prescriptions.html">Prescriptions</a> |
-    <a href="services.html">Services</a> |
-    <a href="index.html">Déconnexion</a>
-  </nav>
-  <h1>Services hospitaliers</h1>
-  <div>
-    <input type="text" id="s-search" placeholder="Rechercher">
-    <select id="s-sort">
-      <option value="">Trier par</option>
-      <option value="nom">Nom</option>
-      <option value="responsable">Responsable</option>
-    </select>
-    <select id="s-order">
-      <option value="asc">Asc</option>
-      <option value="desc">Desc</option>
-    </select>
+<body class="min-h-screen bg-gray-50">
+  <nav></nav>
+  <div class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-semibold mb-4 flex items-center gap-2">
+      <i data-lucide="building" class="w-5 h-5 text-blue-600"></i>
+      Services hospitaliers
+    </h1>
+    <div class="bg-white rounded-lg shadow p-4 mb-4 flex flex-wrap items-center gap-3">
+      <input class="border rounded px-3 py-2 flex-1 min-w-[200px]" type="text" id="s-search" placeholder="Rechercher">
+      <select class="border rounded px-3 py-2" id="s-sort">
+        <option value="">Trier par</option>
+        <option value="nom">Nom</option>
+        <option value="responsable">Responsable</option>
+      </select>
+      <select class="border rounded px-3 py-2" id="s-order">
+        <option value="asc">Asc</option>
+        <option value="desc">Desc</option>
+      </select>
+      <button type="button" id="export-services" class="ml-auto bg-gray-100 hover:bg-gray-200 text-gray-800 rounded px-3 py-2">Exporter CSV</button>
+    </div>
+    <form id="service-form" class="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-1 md:grid-cols-5 gap-3">
+      <input class="border rounded px-3 py-2" type="text" id="s-nom" placeholder="Nom du service" required>
+      <input class="border rounded px-3 py-2" type="text" id="s-resp" placeholder="Responsable" required>
+      <input class="border rounded px-3 py-2 md:col-span-2" type="text" id="s-desc" placeholder="Description" required>
+      <div class="md:col-span-5 flex gap-3">
+        <button type="submit" class="bg-blue-600 text-white rounded px-3 py-2">Ajouter</button>
+      </div>
+    </form>
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <table class="min-w-full">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="text-left px-4 py-2">Nom du service</th>
+            <th class="text-left px-4 py-2">Responsable</th>
+            <th class="text-left px-4 py-2">Description</th>
+            <th class="text-left px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
-  <form id="service-form">
-    <input type="text" id="s-nom" placeholder="Nom du service" required>
-    <input type="text" id="s-resp" placeholder="Responsable" required>
-    <input type="text" id="s-desc" placeholder="Description" required>
-    <button type="submit">Ajouter</button>
-    <button type="button" id="export-services">Exporter CSV</button>
-  </form>
-  <table border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>Nom du service</th>
-        <th>Responsable</th>
-        <th>Description</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-    </tbody>
-  </table>
   <script src="src/js/auth.js"></script>
   <script src="src/js/guard.js"></script>
   <script src="src/js/store.js"></script>
@@ -56,6 +58,7 @@
   <script>
     requireAuth();
     mountNav();
+    lucide.createIcons();
   </script>
 </body>
 </html>
