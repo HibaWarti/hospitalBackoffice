@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HLSpital • Patients</title>
+  <title>Hospital • Patients</title>
 </head>
 <body>
   <nav>
@@ -16,6 +16,19 @@
     <a href="index.html">Déconnexion</a>
   </nav>
   <h1>Patients</h1>
+  <form id="patient-form">
+    <input type="text" id="p-nom" placeholder="Nom" required>
+    <input type="number" id="p-age" placeholder="Âge" required>
+    <select id="p-sexe" required>
+      <option value="">Sexe</option>
+      <option value="M">M</option>
+      <option value="F">F</option>
+    </select>
+    <input type="text" id="p-tel" placeholder="Téléphone" required>
+    <input type="text" id="p-adr" placeholder="Adresse" required>
+    <button type="submit">Ajouter</button>
+    <button type="button" id="export-patients">Exporter CSV</button>
+  </form>
   <table border="1" cellpadding="6">
     <thead>
       <tr>
@@ -24,11 +37,21 @@
         <th>Sexe</th>
         <th>Téléphone</th>
         <th>Adresse</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
     </tbody>
   </table>
+  <script src="src/js/auth.js"></script>
+  <script src="src/js/guard.js"></script>
+  <script src="src/js/store.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@faker-js/faker@8.4.1/dist/faker.umd.min.js"></script>
+  <script src="src/js/data.js"></script>
+  <script src="src/js/patients.js"></script>
+  <script>
+    requireAuth();
+    mountNav();
+  </script>
 </body>
 </html>
-
