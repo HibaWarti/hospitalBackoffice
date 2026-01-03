@@ -101,7 +101,53 @@ function seedIfEmpty() {
       localStorage.setItem(HL_PATIENTS, JSON.stringify(patients));
       localStorage.setItem(HL_DOCTORS, JSON.stringify(doctors));
     } catch (e) {
-      // ignore faker errors to keep app functional
     }
+  } else {
+    const services = JSON.parse(localStorage.getItem(HL_SERVICES) || '[]');
+    const serviceIds = services.map((s) => s.id);
+    const patients = JSON.parse(localStorage.getItem(HL_PATIENTS) || '[]');
+    const doctors = JSON.parse(localStorage.getItem(HL_DOCTORS) || '[]');
+    const targetPatients = 100;
+    const targetDoctors = 40;
+    function gid(prefix) {
+      return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+    }
+    const firstNames = ['Imane','Omar','Sara','Youssef','Fatima','Hicham','Rania','Khalid','Salma','Mehdi','Aicha','Reda','Nouhaila','Anas','Soukaina','Hamza','Ibtissam','Nabil','Laila','Adil','Karim','Amina','Samir','Yassine','Noura','Ali'];
+    const cities = ['Rabat','Casablanca','Fès','Marrakech','Agadir','Tanger','Oujda','Kenitra','Meknès','Tétouan'];
+    const specialties = [
+      'Urgentiste','Cardiologue','Pédiatre','Neurologue','Dermatologue',
+      'Radiologue','Anesthésiste','Oncologue','Chirurgien','Endocrinologue',
+      'Gastro-entérologue','Néphrologue','Ophtalmologue'
+    ];
+    function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+    function phone() { return '07' + Math.floor(10000000 + Math.random() * 89999999); }
+    function email(first) { return `${first.toLowerCase()}@example.com`; }
+    while (patients.length < targetPatients) {
+      const first = rand(firstNames);
+      const sex = Math.random() < 0.5 ? 'M' : 'F';
+      patients.push({
+        id: gid('pat'),
+        nom: first,
+        age: Math.floor(1 + Math.random() * 90),
+        sexe: sex,
+        telephone: String(phone()),
+        adresse: rand(cities),
+      });
+    }
+    while (doctors.length < targetDoctors) {
+      const first = rand(firstNames);
+      const serviceId =
+        serviceIds.length ? serviceIds[Math.floor(Math.random() * serviceIds.length)] : 'srv-1';
+      doctors.push({
+        id: gid('doc'),
+        nom: `Dr. ${first}`,
+        specialite: rand(specialties),
+        telephone: String(phone()),
+        email: email(first),
+        serviceId,
+      });
+    }
+    localStorage.setItem(HL_PATIENTS, JSON.stringify(patients));
+    localStorage.setItem(HL_DOCTORS, JSON.stringify(doctors));
   }
 }
