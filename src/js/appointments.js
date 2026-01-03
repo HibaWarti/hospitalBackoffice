@@ -3,25 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
   mountNav();
   seedIfEmpty();
   const tbody = document.querySelector('tbody');
-  const form = document.getElementById('appt-form');
   const exportBtn = document.getElementById('export-appointments');
-  const pSelect = document.getElementById('a-patient');
-  const dSelect = document.getElementById('a-doctor');
-  const sSelect = document.getElementById('a-status');
   const searchInput = document.getElementById('a-search');
   const sortField = document.getElementById('a-sort');
   const sortOrder = document.getElementById('a-order');
-
-  function loadRefs() {
-    const patients = list(HL_PATIENTS);
-    const doctors = list(HL_DOCTORS);
-    pSelect.innerHTML =
-      '<option value="">Patient</option>' +
-      patients.map((p) => `<option value="${p.id}">${p.nom}</option>`).join('');
-    dSelect.innerHTML =
-      '<option value="">Médecin</option>' +
-      doctors.map((d) => `<option value="${d.id}">${d.nom}</option>`).join('');
-  }
+  const addBtn = document.getElementById('add-appointment');
 
   function patientName(id) {
     const p = list(HL_PATIENTS).find((x) => x.id === id);
@@ -83,18 +69,45 @@ document.addEventListener('DOMContentLoaded', () => {
       .join('');
   }
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const patientId = pSelect.value;
-    const doctorId = dSelect.value;
-    const date = document.getElementById('a-date').value;
-    const time = document.getElementById('a-time').value;
-    const status = sSelect.value;
-    if (!patientId || !doctorId || !date || !time || !status) return;
-    create(HL_APPOINTMENTS, { patientId, doctorId, date, time, status }, 'apt');
-    form.reset();
-    render();
-  });
+  function openAddModal() {
+    const patients = list(HL_PATIENTS);
+    const doctors = list(HL_DOCTORS);
+    const pOptions = patients.map((p) => `<option value="${p.id}">${p.nom}</option>`).join('');
+    const dOptions = doctors.map((d) => `<option value="${d.id}">${d.nom}</option>`).join('');
+    Swal.fire({
+      title: 'Ajouter un rendez-vous',
+      html:
+        '<div class="space-y-2 text-left">' +
+        `<select id="sw-p" class="swal2-select"><option value="">Patient</option>${pOptions}</select>` +
+        `<select id="sw-d" class="swal2-select"><option value="">Médecin</option>${dOptions}</select>` +
+        '<input id="sw-date" class="swal2-input" type="date">' +
+        '<input id="sw-time" class="swal2-input" type="time">' +
+        '<select id="sw-status" class="swal2-select"><option value="">Statut</option><option value="confirmé">confirmé</option><option value="annulé">annulé</option><option value="en attente">en attente</option></select>' +
+        '</div>',
+      focusConfirm: false,
+      showCancelButton: true,
+      showCloseButton: true,
+      confirmButtonText: 'Ajouter',
+      preConfirm: () => {
+        const patientId = document.getElementById('sw-p').value;
+        const doctorId = document.getElementById('sw-d').value;
+        const date = document.getElementById('sw-date').value;
+        const time = document.getElementById('sw-time').value;
+        const status = document.getElementById('sw-status').value;
+        if (!patientId || !doctorId || !date || !time || !status) {
+          Swal.showValidationMessage('Veuillez remplir tous les champs');
+          return false;
+        }
+        return { patientId, doctorId, date, time, status };
+      },
+    }).then((res) => {
+      if (res.isConfirmed && res.value) {
+        create(HL_APPOINTMENTS, res.value, 'apt');
+        render();
+        Swal.fire({ icon: 'success', title: 'Ajouté', text: 'Rendez-vous ajouté' });
+      }
+    });
+  }
 
   tbody.addEventListener('click', (e) => {
     const t = e.target;
@@ -108,11 +121,35 @@ document.addEventListener('DOMContentLoaded', () => {
       const items = list(HL_APPOINTMENTS);
       const a = items.find((x) => x.id === id);
       if (!a) return;
-      const date = prompt('Date (YYYY-MM-DD)', a.date) || a.date;
-      const time = prompt('Heure (HH:MM)', a.time) || a.time;
-      const status = prompt('Statut', a.status) || a.status;
-      update(HL_APPOINTMENTS, id, { date, time, status });
-      render();
+      Swal.fire({
+        title: 'Éditer rendez-vous',
+        html:
+          '<div class="space-y-2 text-left">' +
+          `<input id="sw-date" class="swal2-input" type="date" value="${a.date}">` +
+          `<input id="sw-time" class="swal2-input" type="time" value="${a.time}">` +
+          `<select id="sw-status" class="swal2-select"><option value="">Statut</option><option value="confirmé"${a.status==='confirmé'?' selected':''}>confirmé</option><option value="annulé"${a.status==='annulé'?' selected':''}>annulé</option><option value="en attente"${a.status==='en attente'?' selected':''}>en attente</option></select>` +
+          '</div>',
+        focusConfirm: false,
+        showCancelButton: true,
+        showCloseButton: true,
+        confirmButtonText: 'Sauvegarder',
+        preConfirm: () => {
+          const date = document.getElementById('sw-date').value;
+          const time = document.getElementById('sw-time').value;
+          const status = document.getElementById('sw-status').value;
+          if (!date || !time || !status) {
+            Swal.showValidationMessage('Veuillez remplir tous les champs');
+            return false;
+          }
+          return { date, time, status };
+        },
+      }).then((res) => {
+        if (res.isConfirmed && res.value) {
+          update(HL_APPOINTMENTS, id, res.value);
+          render();
+          Swal.fire({ icon: 'success', title: 'Modifié', text: 'Rendez-vous mis à jour' });
+        }
+      });
     }
   });
 
@@ -123,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (searchInput) searchInput.addEventListener('input', render);
   if (sortField) sortField.addEventListener('change', render);
   if (sortOrder) sortOrder.addEventListener('change', render);
+  if (addBtn) addBtn.addEventListener('click', openAddModal);
 
-  loadRefs();
   render();
 });

@@ -6,6 +6,7 @@
   <title>HLSpital • Rendez-vous</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="min-h-screen bg-gray-50">
   <nav></nav>
@@ -28,27 +29,9 @@
         <option value="asc">Asc</option>
         <option value="desc">Desc</option>
       </select>
+      <button type="button" id="add-appointment" class="bg-blue-600 text-white rounded px-3 py-2">Ajouter</button>
       <button type="button" id="export-appointments" class="ml-auto bg-gray-100 hover:bg-gray-200 text-gray-800 rounded px-3 py-2">Exporter CSV</button>
     </div>
-    <form id="appt-form" class="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-1 md:grid-cols-6 gap-3">
-      <select class="border rounded px-3 py-2" id="a-patient" required>
-        <option value="">Patient</option>
-      </select>
-      <select class="border rounded px-3 py-2" id="a-doctor" required>
-        <option value="">Médecin</option>
-      </select>
-      <input class="border rounded px-3 py-2" type="date" id="a-date" required>
-      <input class="border rounded px-3 py-2" type="time" id="a-time" required>
-      <select class="border rounded px-3 py-2" id="a-status" required>
-        <option value="">Statut</option>
-        <option value="confirmé">confirmé</option>
-        <option value="annulé">annulé</option>
-        <option value="en attente">en attente</option>
-      </select>
-      <div class="md:col-span-6 flex gap-3">
-        <button type="submit" class="bg-blue-600 text-white rounded px-3 py-2">Ajouter</button>
-      </div>
-    </form>
     <div class="bg-white rounded-lg shadow overflow-hidden">
       <table class="min-w-full">
         <thead class="bg-gray-100">
@@ -65,12 +48,12 @@
       </table>
     </div>
   </div>
-  <script src="src/js/auth.js"></script>
-  <script src="src/js/guard.js"></script>
-  <script src="src/js/store.js"></script>
+  <script src="../src/js/auth.js"></script>
+  <script src="../src/js/guard.js"></script>
+  <script src="../src/js/store.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@faker-js/faker@8.4.1/dist/faker.umd.min.js"></script>
-  <script src="src/js/data.js"></script>
-  <script src="src/js/appointments.js"></script>
+  <script src="../src/js/data.js"></script>
+  <script src="../src/js/appointments.js"></script>
   <script>
     requireAuth();
     mountNav();

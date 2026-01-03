@@ -3,11 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
   mountNav();
   seedIfEmpty();
   const tbody = document.querySelector('tbody');
-  const form = document.getElementById('service-form');
   const exportBtn = document.getElementById('export-services');
   const searchInput = document.getElementById('s-search');
   const sortField = document.getElementById('s-sort');
   const sortOrder = document.getElementById('s-order');
+  const addBtn = document.getElementById('add-service');
 
   function applyFilterSort(items) {
     const q = (searchInput && searchInput.value || '').toLowerCase();
@@ -49,16 +49,37 @@ document.addEventListener('DOMContentLoaded', () => {
       .join('');
   }
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const nom = document.getElementById('s-nom').value.trim();
-    const responsable = document.getElementById('s-resp').value.trim();
-    const description = document.getElementById('s-desc').value.trim();
-    if (!nom || !responsable || !description) return;
-    create(HL_SERVICES, { nom, responsable, description }, 'srv');
-    form.reset();
-    render();
-  });
+  function openAddModal() {
+    Swal.fire({
+      title: 'Ajouter un service',
+      html:
+        '<div class="space-y-2 text-left">' +
+        '<input id="sw-nom" class="swal2-input" placeholder="Nom du service">' +
+        '<input id="sw-resp" class="swal2-input" placeholder="Responsable">' +
+        '<input id="sw-desc" class="swal2-input" placeholder="Description">' +
+        '</div>',
+      focusConfirm: false,
+      showCancelButton: true,
+      showCloseButton: true,
+      confirmButtonText: 'Ajouter',
+      preConfirm: () => {
+        const nom = document.getElementById('sw-nom').value.trim();
+        const responsable = document.getElementById('sw-resp').value.trim();
+        const description = document.getElementById('sw-desc').value.trim();
+        if (!nom || !responsable || !description) {
+          Swal.showValidationMessage('Veuillez remplir tous les champs');
+          return false;
+        }
+        return { nom, responsable, description };
+      },
+    }).then((res) => {
+      if (res.isConfirmed && res.value) {
+        create(HL_SERVICES, res.value, 'srv');
+        render();
+        Swal.fire({ icon: 'success', title: 'Ajouté', text: 'Service ajouté' });
+      }
+    });
+  }
 
   tbody.addEventListener('click', (e) => {
     const t = e.target;
@@ -72,11 +93,35 @@ document.addEventListener('DOMContentLoaded', () => {
       const items = list(HL_SERVICES);
       const s = items.find((x) => x.id === id);
       if (!s) return;
-      const nom = prompt('Nom du service', s.nom) || s.nom;
-      const responsable = prompt('Responsable', s.responsable) || s.responsable;
-      const description = prompt('Description', s.description) || s.description;
-      update(HL_SERVICES, id, { nom, responsable, description });
-      render();
+      Swal.fire({
+        title: 'Éditer service',
+        html:
+          '<div class="space-y-2 text-left">' +
+          `<input id="sw-nom" class="swal2-input" placeholder="Nom du service" value="${s.nom}">` +
+          `<input id="sw-resp" class="swal2-input" placeholder="Responsable" value="${s.responsable}">` +
+          `<input id="sw-desc" class="swal2-input" placeholder="Description" value="${s.description}">` +
+          '</div>',
+        focusConfirm: false,
+        showCancelButton: true,
+        showCloseButton: true,
+        confirmButtonText: 'Sauvegarder',
+        preConfirm: () => {
+          const nom = document.getElementById('sw-nom').value.trim();
+          const responsable = document.getElementById('sw-resp').value.trim();
+          const description = document.getElementById('sw-desc').value.trim();
+          if (!nom || !responsable || !description) {
+            Swal.showValidationMessage('Veuillez remplir tous les champs');
+            return false;
+          }
+          return { nom, responsable, description };
+        },
+      }).then((res) => {
+        if (res.isConfirmed && res.value) {
+          update(HL_SERVICES, id, res.value);
+          render();
+          Swal.fire({ icon: 'success', title: 'Modifié', text: 'Service mis à jour' });
+        }
+      });
     }
   });
 
@@ -87,6 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (searchInput) searchInput.addEventListener('input', render);
   if (sortField) sortField.addEventListener('change', render);
   if (sortOrder) sortOrder.addEventListener('change', render);
+  if (addBtn) addBtn.addEventListener('click', openAddModal);
 
   render();
 });

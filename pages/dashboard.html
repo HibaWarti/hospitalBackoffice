@@ -7,24 +7,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://unpkg.com/vanilla-tilt@1.7.2/dist/vanilla-tilt.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="min-h-screen bg-gray-50">
-  <nav class="bg-white shadow">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center gap-4">
-      <div class="flex items-center gap-2">
-        <i data-lucide="hospital" class="w-5 h-5 text-blue-600"></i>
-        <span class="font-semibold">HLSpital</span>
-      </div>
-      <div class="flex-1"></div>
-      <a class="text-sm text-gray-700 hover:text-blue-600" href="dashboard.html">Dashboard</a>
-      <a class="text-sm text-gray-700 hover:text-blue-600" href="patients.html">Patients</a>
-      <a class="text-sm text-gray-700 hover:text-blue-600" href="doctors.html">Médecins</a>
-      <a class="text-sm text-gray-700 hover:text-blue-600" href="appointments.html">Rendez-vous</a>
-      <a class="text-sm text-gray-700 hover:text-blue-600" href="prescriptions.html">Prescriptions</a>
-      <a class="text-sm text-gray-700 hover:text-blue-600" href="services.html">Services</a>
-      <a class="text-sm text-red-600 hover:text-red-700" href="index.html">Déconnexion</a>
-    </div>
-  </nav>
+  <nav></nav>
   <div class="max-w-6xl mx-auto px-4 py-6">
     <h1 class="text-2xl font-semibold mb-4">Tableau de bord</h1>
     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
@@ -82,12 +68,12 @@
       </div>
     </div>
   </div>
-  <script src="src/js/auth.js"></script>
-  <script src="src/js/guard.js"></script>
-  <script src="src/js/store.js"></script>
-  <script src="src/js/data.js"></script>
+  <script src="../src/js/auth.js"></script>
+  <script src="../src/js/guard.js"></script>
+  <script src="../src/js/store.js"></script>
+  <script src="../src/js/data.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="src/js/dashboard.js"></script>
+  <script src="../src/js/dashboard.js"></script>
   <script>
     requireAuth();
     mountNav();

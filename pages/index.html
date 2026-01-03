@@ -6,6 +6,7 @@
   <title>HLSpital • Connexion</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="min-h-screen bg-gray-50 flex items-center justify-center">
   <div class="w-full max-w-md bg-white rounded-xl shadow p-6">
@@ -30,7 +31,7 @@
   <script>
     lucide.createIcons();
   </script>
-  <script src="src/js/auth.js"></script>
+  <script src="../src/js/auth.js"></script>
   <script>
     const form = document.getElementById('login-form');
     const error = document.getElementById('login-error');
@@ -44,6 +45,7 @@
         window.location.href = 'dashboard.html';
       } else {
         error.textContent = 'Identifiants incorrects';
+        Swal.fire({ icon: 'error', title: 'Échec', text: 'Identifiants incorrects' });
       }
     });
   </script>

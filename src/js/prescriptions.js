@@ -3,24 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
   mountNav();
   seedIfEmpty();
   const tbody = document.querySelector('tbody');
-  const form = document.getElementById('rx-form');
   const exportBtn = document.getElementById('export-prescriptions');
-  const pSelect = document.getElementById('r-patient');
-  const dSelect = document.getElementById('r-doctor');
   const searchInput = document.getElementById('r-search');
   const sortField = document.getElementById('r-sort');
   const sortOrder = document.getElementById('r-order');
-
-  function loadRefs() {
-    const patients = list(HL_PATIENTS);
-    const doctors = list(HL_DOCTORS);
-    pSelect.innerHTML =
-      '<option value="">Patient</option>' +
-      patients.map((p) => `<option value="${p.id}">${p.nom}</option>`).join('');
-    dSelect.innerHTML =
-      '<option value="">Médecin</option>' +
-      doctors.map((d) => `<option value="${d.id}">${d.nom}</option>`).join('');
-  }
+  const addBtn = document.getElementById('add-prescription');
 
   function patientName(id) {
     const p = list(HL_PATIENTS).find((x) => x.id === id);
@@ -80,18 +67,45 @@ document.addEventListener('DOMContentLoaded', () => {
       .join('');
   }
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const patientId = pSelect.value;
-    const doctorId = dSelect.value;
-    const meds = document.getElementById('r-meds').value.split(',').map((s) => s.trim()).filter(Boolean);
-    const duration = document.getElementById('r-duration').value.trim();
-    const notes = document.getElementById('r-notes').value.trim();
-    if (!patientId || !doctorId || !meds.length || !duration) return;
-    create(HL_PRESCRIPTIONS, { patientId, doctorId, meds, duration, notes }, 'rx');
-    form.reset();
-    render();
-  });
+  function openAddModal() {
+    const patients = list(HL_PATIENTS);
+    const doctors = list(HL_DOCTORS);
+    const pOptions = patients.map((p) => `<option value="${p.id}">${p.nom}</option>`).join('');
+    const dOptions = doctors.map((d) => `<option value="${d.id}">${d.nom}</option>`).join('');
+    Swal.fire({
+      title: 'Ajouter une prescription',
+      html:
+        '<div class="space-y-2 text-left">' +
+        `<select id="sw-p" class="swal2-select"><option value="">Patient</option>${pOptions}</select>` +
+        `<select id="sw-d" class="swal2-select"><option value="">Médecin</option>${dOptions}</select>` +
+        '<input id="sw-meds" class="swal2-input" placeholder="Médicaments (séparés par ,)">' +
+        '<input id="sw-duration" class="swal2-input" placeholder="Durée du traitement">' +
+        '<input id="sw-notes" class="swal2-input" placeholder="Notes médicales">' +
+        '</div>',
+      focusConfirm: false,
+      showCancelButton: true,
+      showCloseButton: true,
+      confirmButtonText: 'Ajouter',
+      preConfirm: () => {
+        const patientId = document.getElementById('sw-p').value;
+        const doctorId = document.getElementById('sw-d').value;
+        const meds = (document.getElementById('sw-meds').value || '').split(',').map((s) => s.trim()).filter(Boolean);
+        const duration = document.getElementById('sw-duration').value.trim();
+        const notes = document.getElementById('sw-notes').value.trim();
+        if (!patientId || !doctorId || !meds.length || !duration) {
+          Swal.showValidationMessage('Veuillez remplir patient, médecin, médicaments et durée');
+          return false;
+        }
+        return { patientId, doctorId, meds, duration, notes };
+      },
+    }).then((res) => {
+      if (res.isConfirmed && res.value) {
+        create(HL_PRESCRIPTIONS, res.value, 'rx');
+        render();
+        Swal.fire({ icon: 'success', title: 'Ajouté', text: 'Prescription ajoutée' });
+      }
+    });
+  }
 
   tbody.addEventListener('click', (e) => {
     const t = e.target;
@@ -105,11 +119,35 @@ document.addEventListener('DOMContentLoaded', () => {
       const items = list(HL_PRESCRIPTIONS);
       const r = items.find((x) => x.id === id);
       if (!r) return;
-      const meds = (prompt('Médicaments (séparés par ,)', (Array.isArray(r.meds) ? r.meds.join(', ') : r.meds)) || '').split(',').map((s) => s.trim()).filter(Boolean);
-      const duration = prompt('Durée du traitement', r.duration) || r.duration;
-      const notes = prompt('Notes médicales', r.notes || '') || r.notes || '';
-      update(HL_PRESCRIPTIONS, id, { meds, duration, notes });
-      render();
+      Swal.fire({
+        title: 'Éditer prescription',
+        html:
+          '<div class="space-y-2 text-left">' +
+          `<input id="sw-meds" class="swal2-input" placeholder="Médicaments (séparés par ,)" value="${Array.isArray(r.meds) ? r.meds.join(', ') : r.meds}">` +
+          `<input id="sw-duration" class="swal2-input" placeholder="Durée du traitement" value="${r.duration}">` +
+          `<input id="sw-notes" class="swal2-input" placeholder="Notes médicales" value="${r.notes || ''}">` +
+          '</div>',
+        focusConfirm: false,
+        showCancelButton: true,
+        showCloseButton: true,
+        confirmButtonText: 'Sauvegarder',
+        preConfirm: () => {
+          const meds = (document.getElementById('sw-meds').value || '').split(',').map((s) => s.trim()).filter(Boolean);
+          const duration = document.getElementById('sw-duration').value.trim();
+          const notes = document.getElementById('sw-notes').value.trim();
+          if (!meds.length || !duration) {
+            Swal.showValidationMessage('Veuillez remplir médicaments et durée');
+            return false;
+          }
+          return { meds, duration, notes };
+        },
+      }).then((res) => {
+        if (res.isConfirmed && res.value) {
+          update(HL_PRESCRIPTIONS, id, res.value);
+          render();
+          Swal.fire({ icon: 'success', title: 'Modifié', text: 'Prescription mise à jour' });
+        }
+      });
     }
   });
 
@@ -120,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (searchInput) searchInput.addEventListener('input', render);
   if (sortField) sortField.addEventListener('change', render);
   if (sortOrder) sortOrder.addEventListener('change', render);
+  if (addBtn) addBtn.addEventListener('click', openAddModal);
 
-  loadRefs();
   render();
 });

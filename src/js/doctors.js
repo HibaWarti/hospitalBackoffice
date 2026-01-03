@@ -3,19 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
   mountNav();
   seedIfEmpty();
   const tbody = document.querySelector('tbody');
-  const form = document.getElementById('doctor-form');
   const exportBtn = document.getElementById('export-doctors');
-  const serviceSelect = document.getElementById('d-service');
   const searchInput = document.getElementById('d-search');
   const sortField = document.getElementById('d-sort');
   const sortOrder = document.getElementById('d-order');
-
-  function loadServices() {
-    const services = list(HL_SERVICES);
-    serviceSelect.innerHTML =
-      '<option value="">Service</option>' +
-      services.map((s) => `<option value="${s.id}">${s.nom}</option>`).join('');
-  }
+  const addBtn = document.getElementById('add-doctor');
 
   function serviceName(id) {
     const s = list(HL_SERVICES).find((x) => x.id === id);
@@ -64,18 +56,43 @@ document.addEventListener('DOMContentLoaded', () => {
       .join('');
   }
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const nom = document.getElementById('d-nom').value.trim();
-    const specialite = document.getElementById('d-spec').value.trim();
-    const telephone = document.getElementById('d-tel').value.trim();
-    const email = document.getElementById('d-email').value.trim();
-    const serviceId = document.getElementById('d-service').value;
-    if (!nom || !specialite || !telephone || !email || !serviceId) return;
-    create(HL_DOCTORS, { nom, specialite, telephone, email, serviceId }, 'doc');
-    form.reset();
-    render();
-  });
+  function openAddModal() {
+    const services = list(HL_SERVICES);
+    const options = services.map((s) => `<option value="${s.id}">${s.nom}</option>`).join('');
+    Swal.fire({
+      title: 'Ajouter un médecin',
+      html:
+        '<div class="space-y-2 text-left">' +
+        '<input id="sw-nom" class="swal2-input" placeholder="Nom">' +
+        '<input id="sw-spec" class="swal2-input" placeholder="Spécialité">' +
+        '<input id="sw-tel" class="swal2-input" placeholder="Téléphone">' +
+        '<input id="sw-email" class="swal2-input" type="email" placeholder="Email">' +
+        `<select id="sw-service" class="swal2-select"><option value="">Service</option>${options}</select>` +
+        '</div>',
+      focusConfirm: false,
+      showCancelButton: true,
+      showCloseButton: true,
+      confirmButtonText: 'Ajouter',
+      preConfirm: () => {
+        const nom = document.getElementById('sw-nom').value.trim();
+        const specialite = document.getElementById('sw-spec').value.trim();
+        const telephone = document.getElementById('sw-tel').value.trim();
+        const email = document.getElementById('sw-email').value.trim();
+        const serviceId = document.getElementById('sw-service').value;
+        if (!nom || !specialite || !telephone || !email || !serviceId) {
+          Swal.showValidationMessage('Veuillez remplir tous les champs');
+          return false;
+        }
+        return { nom, specialite, telephone, email, serviceId };
+      },
+    }).then((res) => {
+      if (res.isConfirmed && res.value) {
+        create(HL_DOCTORS, res.value, 'doc');
+        render();
+        Swal.fire({ icon: 'success', title: 'Ajouté', text: 'Médecin ajouté' });
+      }
+    });
+  }
 
   tbody.addEventListener('click', (e) => {
     const t = e.target;
@@ -89,13 +106,41 @@ document.addEventListener('DOMContentLoaded', () => {
       const items = list(HL_DOCTORS);
       const d = items.find((x) => x.id === id);
       if (!d) return;
-      const nom = prompt('Nom', d.nom) || d.nom;
-      const specialite = prompt('Spécialité', d.specialite) || d.specialite;
-      const telephone = prompt('Téléphone', d.telephone) || d.telephone;
-      const email = prompt('Email', d.email) || d.email;
-      const serviceId = prompt('Service ID', d.serviceId) || d.serviceId;
-      update(HL_DOCTORS, id, { nom, specialite, telephone, email, serviceId });
-      render();
+      const services = list(HL_SERVICES);
+      const options = services.map((s) => `<option value="${s.id}"${s.id===d.serviceId?' selected':''}>${s.nom}</option>`).join('');
+      Swal.fire({
+        title: 'Éditer médecin',
+        html:
+          '<div class="space-y-2 text-left">' +
+          `<input id="sw-nom" class="swal2-input" placeholder="Nom" value="${d.nom}">` +
+          `<input id="sw-spec" class="swal2-input" placeholder="Spécialité" value="${d.specialite}">` +
+          `<input id="sw-tel" class="swal2-input" placeholder="Téléphone" value="${d.telephone}">` +
+          `<input id="sw-email" class="swal2-input" type="email" placeholder="Email" value="${d.email}">` +
+          `<select id="sw-service" class="swal2-select"><option value="">Service</option>${options}</select>` +
+          '</div>',
+        focusConfirm: false,
+        showCancelButton: true,
+        showCloseButton: true,
+        confirmButtonText: 'Sauvegarder',
+        preConfirm: () => {
+          const nom = document.getElementById('sw-nom').value.trim();
+          const specialite = document.getElementById('sw-spec').value.trim();
+          const telephone = document.getElementById('sw-tel').value.trim();
+          const email = document.getElementById('sw-email').value.trim();
+          const serviceId = document.getElementById('sw-service').value;
+          if (!nom || !specialite || !telephone || !email || !serviceId) {
+            Swal.showValidationMessage('Veuillez remplir tous les champs');
+            return false;
+          }
+          return { nom, specialite, telephone, email, serviceId };
+        },
+      }).then((res) => {
+        if (res.isConfirmed && res.value) {
+          update(HL_DOCTORS, id, res.value);
+          render();
+          Swal.fire({ icon: 'success', title: 'Modifié', text: 'Médecin mis à jour' });
+        }
+      });
     }
   });
 
@@ -106,7 +151,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (searchInput) searchInput.addEventListener('input', render);
   if (sortField) sortField.addEventListener('change', render);
   if (sortOrder) sortOrder.addEventListener('change', render);
-
-  loadServices();
+  if (addBtn) addBtn.addEventListener('click', openAddModal);
   render();
 });

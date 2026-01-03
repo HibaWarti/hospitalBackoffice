@@ -6,6 +6,7 @@
   <title>HLSpital • Médecins</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="min-h-screen bg-gray-50">
   <nav></nav>
@@ -26,20 +27,9 @@
         <option value="asc">Asc</option>
         <option value="desc">Desc</option>
       </select>
+      <button type="button" id="add-doctor" class="bg-blue-600 text-white rounded px-3 py-2">Ajouter</button>
       <button type="button" id="export-doctors" class="ml-auto bg-gray-100 hover:bg-gray-200 text-gray-800 rounded px-3 py-2">Exporter CSV</button>
     </div>
-    <form id="doctor-form" class="bg-white rounded-lg shadow p-4 mb-4 grid grid-cols-1 md:grid-cols-6 gap-3">
-      <input class="border rounded px-3 py-2" type="text" id="d-nom" placeholder="Nom" required>
-      <input class="border rounded px-3 py-2" type="text" id="d-spec" placeholder="Spécialité" required>
-      <input class="border rounded px-3 py-2" type="text" id="d-tel" placeholder="Téléphone" required>
-      <input class="border rounded px-3 py-2" type="email" id="d-email" placeholder="Email" required>
-      <select class="border rounded px-3 py-2" id="d-service" required>
-        <option value="">Service</option>
-      </select>
-      <div class="md:col-span-6 flex gap-3">
-        <button type="submit" class="bg-blue-600 text-white rounded px-3 py-2">Ajouter</button>
-      </div>
-    </form>
     <div class="bg-white rounded-lg shadow overflow-hidden">
       <table class="min-w-full">
         <thead class="bg-gray-100">
@@ -56,12 +46,12 @@
       </table>
     </div>
   </div>
-  <script src="src/js/auth.js"></script>
-  <script src="src/js/guard.js"></script>
-  <script src="src/js/store.js"></script>
+  <script src="../src/js/auth.js"></script>
+  <script src="../src/js/guard.js"></script>
+  <script src="../src/js/store.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@faker-js/faker@8.4.1/dist/faker.umd.min.js"></script>
-  <script src="src/js/data.js"></script>
-  <script src="src/js/doctors.js"></script>
+  <script src="../src/js/data.js"></script>
+  <script src="../src/js/doctors.js"></script>
   <script>
     requireAuth();
     mountNav();

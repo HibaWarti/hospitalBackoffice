@@ -3,11 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
   mountNav();
   seedIfEmpty();
   const tbody = document.querySelector('tbody');
-  const form = document.getElementById('patient-form');
   const exportBtn = document.getElementById('export-patients');
   const searchInput = document.getElementById('p-search');
   const sortField = document.getElementById('p-sort');
   const sortOrder = document.getElementById('p-order');
+  const addBtn = document.getElementById('add-patient');
 
   function applyFilterSort(items) {
     const q = (searchInput && searchInput.value || '').toLowerCase();
@@ -51,18 +51,41 @@ document.addEventListener('DOMContentLoaded', () => {
       .join('');
   }
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const nom = document.getElementById('p-nom').value.trim();
-    const age = Number(document.getElementById('p-age').value);
-    const sexe = document.getElementById('p-sexe').value;
-    const telephone = document.getElementById('p-tel').value.trim();
-    const adresse = document.getElementById('p-adr').value.trim();
-    if (!nom || !age || !sexe || !telephone || !adresse) return;
-    create(HL_PATIENTS, { nom, age, sexe, telephone, adresse }, 'pat');
-    form.reset();
-    render();
-  });
+  function openAddModal() {
+    Swal.fire({
+      title: 'Ajouter un patient',
+      html:
+        '<div class="space-y-2 text-left">' +
+        '<input id="sw-nom" class="swal2-input" placeholder="Nom">' +
+        '<input id="sw-age" class="swal2-input" type="number" placeholder="Âge">' +
+        '<select id="sw-sexe" class="swal2-select"><option value="">Sexe</option><option value="M">M</option><option value="F">F</option></select>' +
+        '<input id="sw-tel" class="swal2-input" placeholder="Téléphone">' +
+        '<input id="sw-adr" class="swal2-input" placeholder="Adresse">' +
+        '</div>',
+      focusConfirm: false,
+      showCancelButton: true,
+      showCloseButton: true,
+      confirmButtonText: 'Ajouter',
+      preConfirm: () => {
+        const nom = document.getElementById('sw-nom').value.trim();
+        const age = Number(document.getElementById('sw-age').value);
+        const sexe = document.getElementById('sw-sexe').value;
+        const telephone = document.getElementById('sw-tel').value.trim();
+        const adresse = document.getElementById('sw-adr').value.trim();
+        if (!nom || !age || !sexe || !telephone || !adresse) {
+          Swal.showValidationMessage('Veuillez remplir tous les champs');
+          return false;
+        }
+        return { nom, age, sexe, telephone, adresse };
+      },
+    }).then((res) => {
+      if (res.isConfirmed && res.value) {
+        create(HL_PATIENTS, res.value, 'pat');
+        render();
+        Swal.fire({ icon: 'success', title: 'Ajouté', text: 'Patient ajouté' });
+      }
+    });
+  }
 
   tbody.addEventListener('click', (e) => {
     const t = e.target;
@@ -76,13 +99,39 @@ document.addEventListener('DOMContentLoaded', () => {
       const items = list(HL_PATIENTS);
       const p = items.find((x) => x.id === id);
       if (!p) return;
-      const nom = prompt('Nom', p.nom) || p.nom;
-      const age = Number(prompt('Âge', String(p.age)) || p.age);
-      const sexe = prompt('Sexe (M/F)', p.sexe) || p.sexe;
-      const telephone = prompt('Téléphone', p.telephone) || p.telephone;
-      const adresse = prompt('Adresse', p.adresse) || p.adresse;
-      update(HL_PATIENTS, id, { nom, age, sexe, telephone, adresse });
-      render();
+      Swal.fire({
+        title: 'Éditer patient',
+        html:
+          '<div class="space-y-2 text-left">' +
+          `<input id="sw-nom" class="swal2-input" placeholder="Nom" value="${p.nom}">` +
+          `<input id="sw-age" class="swal2-input" type="number" placeholder="Âge" value="${p.age}">` +
+          `<select id="sw-sexe" class="swal2-select"><option value="">Sexe</option><option value="M"${p.sexe==='M'?' selected':''}>M</option><option value="F"${p.sexe==='F'?' selected':''}>F</option></select>` +
+          `<input id="sw-tel" class="swal2-input" placeholder="Téléphone" value="${p.telephone}">` +
+          `<input id="sw-adr" class="swal2-input" placeholder="Adresse" value="${p.adresse}">` +
+          '</div>',
+        focusConfirm: false,
+        showCancelButton: true,
+        showCloseButton: true,
+        confirmButtonText: 'Sauvegarder',
+        preConfirm: () => {
+          const nom = document.getElementById('sw-nom').value.trim();
+          const age = Number(document.getElementById('sw-age').value);
+          const sexe = document.getElementById('sw-sexe').value;
+          const telephone = document.getElementById('sw-tel').value.trim();
+          const adresse = document.getElementById('sw-adr').value.trim();
+          if (!nom || !age || !sexe || !telephone || !adresse) {
+            Swal.showValidationMessage('Veuillez remplir tous les champs');
+            return false;
+          }
+          return { nom, age, sexe, telephone, adresse };
+        },
+      }).then((res) => {
+        if (res.isConfirmed && res.value) {
+          update(HL_PATIENTS, id, res.value);
+          render();
+          Swal.fire({ icon: 'success', title: 'Modifié', text: 'Patient mis à jour' });
+        }
+      });
     }
   });
 
@@ -93,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (searchInput) searchInput.addEventListener('input', render);
   if (sortField) sortField.addEventListener('change', render);
   if (sortOrder) sortOrder.addEventListener('change', render);
+  if (addBtn) addBtn.addEventListener('click', openAddModal);
 
   render();
 });
