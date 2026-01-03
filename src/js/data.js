@@ -1,6 +1,8 @@
 const HL_PATIENTS = 'hlspital_patients';
 const HL_DOCTORS = 'hlspital_doctors';
 const HL_SERVICES = 'hlspital_services';
+const HL_APPOINTMENTS = 'hlspital_appointments';
+const HL_PRESCRIPTIONS = 'hlspital_prescriptions';
 
 function seedIfEmpty() {
   if (!localStorage.getItem(HL_SERVICES)) {
@@ -56,6 +58,42 @@ function seedIfEmpty() {
     ];
     localStorage.setItem(HL_PATIENTS, JSON.stringify(patients));
   }
+  if (!localStorage.getItem(HL_APPOINTMENTS)) {
+    const ps = JSON.parse(localStorage.getItem(HL_PATIENTS) || '[]');
+    const ds = JSON.parse(localStorage.getItem(HL_DOCTORS) || '[]');
+    const statuses = ['confirmé','annulé','en attente'];
+    function gid(prefix) { return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`; }
+    const base = [];
+    for (let i = 0; i < 10 && ps.length && ds.length; i++) {
+      const p = ps[Math.floor(Math.random() * ps.length)].id;
+      const d = ds[Math.floor(Math.random() * ds.length)].id;
+      const day = new Date(Date.now() + Math.floor(Math.random() * 7) * 86400000);
+      const date = day.toISOString().slice(0,10);
+      const h = String(Math.floor(8 + Math.random() * 11)).padStart(2,'0');
+      const m = String(Math.floor(Math.random() * 60)).padStart(2,'0');
+      const time = `${h}:${m}`;
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+      base.push({ id: gid('apt'), patientId: p, doctorId: d, date, time, status });
+    }
+    localStorage.setItem(HL_APPOINTMENTS, JSON.stringify(base));
+  }
+  if (!localStorage.getItem(HL_PRESCRIPTIONS)) {
+    const ps = JSON.parse(localStorage.getItem(HL_PATIENTS) || '[]');
+    const ds = JSON.parse(localStorage.getItem(HL_DOCTORS) || '[]');
+    function gid(prefix) { return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`; }
+    const medsPool = ['Paracétamol','Ibuprofène','Amoxicilline','Oméprazole','Vitamine D','Aspirine','Metformine','Atorvastatine'];
+    const base = [];
+    for (let i = 0; i < 10 && ps.length && ds.length; i++) {
+      const p = ps[Math.floor(Math.random() * ps.length)].id;
+      const d = ds[Math.floor(Math.random() * ds.length)].id;
+      const medsCount = Math.floor(1 + Math.random() * 3);
+      const meds = Array.from({ length: medsCount }, () => medsPool[Math.floor(Math.random() * medsPool.length)]);
+      const duration = `${Math.floor(3 + Math.random() * 12)} jours`;
+      const notes = 'Suivi recommandé';
+      base.push({ id: gid('rx'), patientId: p, doctorId: d, meds, duration, notes });
+    }
+    localStorage.setItem(HL_PRESCRIPTIONS, JSON.stringify(base));
+  }
   const FX = (typeof window !== 'undefined' && window.faker) || (typeof globalThis !== 'undefined' && globalThis.faker);
   const F = FX && (FX.faker || FX);
   if (F) {
@@ -100,6 +138,27 @@ function seedIfEmpty() {
       }
       localStorage.setItem(HL_PATIENTS, JSON.stringify(patients));
       localStorage.setItem(HL_DOCTORS, JSON.stringify(doctors));
+      const appts = JSON.parse(localStorage.getItem(HL_APPOINTMENTS) || '[]');
+      const statuses = ['confirmé','annulé','en attente'];
+      while (appts.length < 80 && patients.length && doctors.length) {
+        const p = patients[Math.floor(Math.random() * patients.length)].id;
+        const d = doctors[Math.floor(Math.random() * doctors.length)].id;
+        const date = F.date.soon({ days: 30 }).toISOString().slice(0,10);
+        const time = String(F.number.int({ min: 8, max: 18 })).padStart(2,'0') + ':' + (F.number.int({ min: 0, max: 59 })).toString().padStart(2,'0');
+        const status = statuses[Math.floor(Math.random() * statuses.length)];
+        appts.push({ id: `${'apt'}-${Date.now()}-${Math.floor(Math.random() * 100000)}`, patientId: p, doctorId: d, date, time, status });
+      }
+      localStorage.setItem(HL_APPOINTMENTS, JSON.stringify(appts));
+      const rx = JSON.parse(localStorage.getItem(HL_PRESCRIPTIONS) || '[]');
+      while (rx.length < 80 && patients.length && doctors.length) {
+        const p = patients[Math.floor(Math.random() * patients.length)].id;
+        const d = doctors[Math.floor(Math.random() * doctors.length)].id;
+        const meds = [F.commerce.product(), F.commerce.product(), F.commerce.product()].slice(0, F.number.int({ min:1, max:3 }));
+        const duration = `${F.number.int({ min: 3, max: 14 })} jours`;
+        const notes = F.lorem.sentence();
+        rx.push({ id: `${'rx'}-${Date.now()}-${Math.floor(Math.random() * 100000)}`, patientId: p, doctorId: d, meds, duration, notes });
+      }
+      localStorage.setItem(HL_PRESCRIPTIONS, JSON.stringify(rx));
     } catch (e) {
     }
   } else {
@@ -149,5 +208,31 @@ function seedIfEmpty() {
     }
     localStorage.setItem(HL_PATIENTS, JSON.stringify(patients));
     localStorage.setItem(HL_DOCTORS, JSON.stringify(doctors));
+    const appts = JSON.parse(localStorage.getItem(HL_APPOINTMENTS) || '[]');
+    const statuses = ['confirmé','annulé','en attente'];
+    while (appts.length < 80 && patients.length && doctors.length) {
+      const p = patients[Math.floor(Math.random() * patients.length)].id;
+      const d = doctors[Math.floor(Math.random() * doctors.length)].id;
+      const day = new Date(Date.now() + Math.floor(Math.random() * 30) * 86400000);
+      const date = day.toISOString().slice(0,10);
+      const h = String(Math.floor(8 + Math.random() * 11)).padStart(2,'0');
+      const m = String(Math.floor(Math.random() * 60)).padStart(2,'0');
+      const time = `${h}:${m}`;
+      const status = statuses[Math.floor(Math.random() * statuses.length)];
+      appts.push({ id: `${'apt'}-${Date.now()}-${Math.floor(Math.random() * 100000)}`, patientId: p, doctorId: d, date, time, status });
+    }
+    localStorage.setItem(HL_APPOINTMENTS, JSON.stringify(appts));
+    const rx = JSON.parse(localStorage.getItem(HL_PRESCRIPTIONS) || '[]');
+    const medsPool = ['Paracétamol','Ibuprofène','Amoxicilline','Oméprazole','Vitamine D','Aspirine','Metformine','Atorvastatine'];
+    while (rx.length < 80 && patients.length && doctors.length) {
+      const p = patients[Math.floor(Math.random() * patients.length)].id;
+      const d = doctors[Math.floor(Math.random() * doctors.length)].id;
+      const medsCount = Math.floor(1 + Math.random() * 3);
+      const meds = Array.from({ length: medsCount }, () => rand(medsPool));
+      const duration = `${Math.floor(3 + Math.random() * 12)} jours`;
+      const notes = 'Suivi recommandé';
+      rx.push({ id: `${'rx'}-${Date.now()}-${Math.floor(Math.random() * 100000)}`, patientId: p, doctorId: d, meds, duration, notes });
+    }
+    localStorage.setItem(HL_PRESCRIPTIONS, JSON.stringify(rx));
   }
 }
