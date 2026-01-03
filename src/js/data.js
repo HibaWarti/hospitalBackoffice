@@ -56,7 +56,9 @@ function seedIfEmpty() {
     ];
     localStorage.setItem(HL_PATIENTS, JSON.stringify(patients));
   }
-  if (typeof faker !== 'undefined') {
+  const FX = (typeof window !== 'undefined' && window.faker) || (typeof globalThis !== 'undefined' && globalThis.faker);
+  const F = FX && (FX.faker || FX);
+  if (F) {
     try {
       const services = JSON.parse(localStorage.getItem(HL_SERVICES) || '[]');
       const serviceIds = services.map((s) => s.id);
@@ -76,23 +78,23 @@ function seedIfEmpty() {
         const sex = Math.random() < 0.5 ? 'M' : 'F';
         patients.push({
           id: gid('pat'),
-          nom: faker.person.firstName(),
-          age: faker.number.int({ min: 1, max: 90 }),
+          nom: F.person.firstName(),
+          age: F.number.int({ min: 1, max: 90 }),
           sexe: sex,
-          telephone: faker.phone.number(),
-          adresse: faker.location.city(),
+          telephone: F.phone.number(),
+          adresse: F.location.city(),
         });
       }
       while (doctors.length < targetDoctors) {
-        const first = faker.person.firstName();
+        const first = F.person.firstName();
         const serviceId =
           serviceIds.length ? serviceIds[Math.floor(Math.random() * serviceIds.length)] : 'srv-1';
         doctors.push({
           id: gid('doc'),
           nom: `Dr. ${first}`,
           specialite: specialties[Math.floor(Math.random() * specialties.length)],
-          telephone: faker.phone.number(),
-          email: faker.internet.email({ firstName: first }),
+          telephone: F.phone.number(),
+          email: F.internet.email({ firstName: first }),
           serviceId,
         });
       }
