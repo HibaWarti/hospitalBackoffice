@@ -47,13 +47,18 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${d.telephone}</td>
             <td>${d.email}</td>
             <td>${serviceName(d.serviceId)}</td>
-            <td>
-              <button data-id="${d.id}" class="edit">Éditer</button>
-              <button data-id="${d.id}" class="del">Supprimer</button>
+            <td class="relative">
+              <button class="kebab px-2 py-1" data-id="${d.id}" aria-label="Actions"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+              <div class="menu absolute right-0 mt-2 bg-white border rounded shadow hidden z-10">
+                <button class="menu-view block w-full text-left px-3 py-2" data-id="${d.id}">Voir</button>
+                <button class="menu-edit block w-full text-left px-3 py-2" data-id="${d.id}">Éditer</button>
+                <button class="menu-del block w-full text-left px-3 py-2 text-red-600" data-id="${d.id}">Supprimer</button>
+              </div>
             </td>
           </tr>`
       )
       .join('');
+    if (window.lucide) lucide.createIcons();
   }
 
   function openAddModal() {
@@ -62,17 +67,23 @@ document.addEventListener('DOMContentLoaded', () => {
     Swal.fire({
       title: 'Ajouter un médecin',
       html:
-        '<div class="space-y-2 text-left">' +
-        '<input id="sw-nom" class="swal2-input" placeholder="Nom">' +
-        '<input id="sw-spec" class="swal2-input" placeholder="Spécialité">' +
-        '<input id="sw-tel" class="swal2-input" placeholder="Téléphone">' +
-        '<input id="sw-email" class="swal2-input" type="email" placeholder="Email">' +
-        `<select id="sw-service" class="swal2-select"><option value="">Service</option>${options}</select>` +
+        '<div class="grid grid-cols-1 gap-2 text-left">' +
+        '<label class="text-sm">Nom<input id="sw-nom" class="swal2-input"></label>' +
+        '<label class="text-sm">Spécialité<input id="sw-spec" class="swal2-input"></label>' +
+        '<label class="text-sm">Téléphone<input id="sw-tel" class="swal2-input"></label>' +
+        '<label class="text-sm">Email<input id="sw-email" class="swal2-input" type="email"></label>' +
+        `<label class="text-sm">Service<select id="sw-service" class="swal2-select"><option value="">Service</option>${options}</select></label>` +
         '</div>',
       focusConfirm: false,
       showCancelButton: true,
       showCloseButton: true,
       confirmButtonText: 'Ajouter',
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: 'bg-blue-600 text-white rounded px-3 py-2',
+        cancelButton: 'bg-gray-200 text-gray-800 rounded px-3 py-2',
+        popup: 'rounded-lg'
+      },
       preConfirm: () => {
         const nom = document.getElementById('sw-nom').value.trim();
         const specialite = document.getElementById('sw-spec').value.trim();
@@ -97,11 +108,25 @@ document.addEventListener('DOMContentLoaded', () => {
   tbody.addEventListener('click', (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
-    if (t.classList.contains('del')) {
+    if (t.closest('.kebab')) {
+      const btn = t.closest('.kebab');
+      const cell = btn.parentElement;
+      document.querySelectorAll('.menu').forEach((m) => m.classList.add('hidden'));
+      const menu = cell.querySelector('.menu');
+      if (menu) menu.classList.toggle('hidden');
+      return;
+    }
+    if (t.classList.contains('menu-view')) {
+      const id = t.getAttribute('data-id');
+      window.location.href = 'info.html?type=doctors&id=' + encodeURIComponent(id);
+      return;
+    }
+    if (t.classList.contains('menu-del')) {
       const id = t.getAttribute('data-id');
       removeItem(HL_DOCTORS, id);
       render();
-    } else if (t.classList.contains('edit')) {
+      Swal.fire({ icon: 'success', title: 'Supprimé', text: 'Médecin supprimé' });
+    } else if (t.classList.contains('menu-edit')) {
       const id = t.getAttribute('data-id');
       const items = list(HL_DOCTORS);
       const d = items.find((x) => x.id === id);

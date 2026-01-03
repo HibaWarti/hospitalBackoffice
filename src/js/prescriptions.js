@@ -58,13 +58,18 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${Array.isArray(r.meds) ? r.meds.join(', ') : r.meds}</td>
             <td>${r.duration}</td>
             <td>${r.notes || ''}</td>
-            <td>
-              <button data-id="${r.id}" class="edit">Éditer</button>
-              <button data-id="${r.id}" class="del">Supprimer</button>
+            <td class="relative">
+              <button class="kebab px-2 py-1" data-id="${r.id}" aria-label="Actions"><i data-lucide="more-vertical" class="w-4 h-4"></i></button>
+              <div class="menu absolute right-0 mt-2 bg-white border rounded shadow hidden z-10">
+                <button class="menu-view block w-full text-left px-3 py-2" data-id="${r.id}">Voir</button>
+                <button class="menu-edit block w-full text-left px-3 py-2" data-id="${r.id}">Éditer</button>
+                <button class="menu-del block w-full text-left px-3 py-2 text-red-600" data-id="${r.id}">Supprimer</button>
+              </div>
             </td>
           </tr>`
       )
       .join('');
+    if (window.lucide) lucide.createIcons();
   }
 
   function openAddModal() {
@@ -75,17 +80,23 @@ document.addEventListener('DOMContentLoaded', () => {
     Swal.fire({
       title: 'Ajouter une prescription',
       html:
-        '<div class="space-y-2 text-left">' +
-        `<select id="sw-p" class="swal2-select"><option value="">Patient</option>${pOptions}</select>` +
-        `<select id="sw-d" class="swal2-select"><option value="">Médecin</option>${dOptions}</select>` +
-        '<input id="sw-meds" class="swal2-input" placeholder="Médicaments (séparés par ,)">' +
-        '<input id="sw-duration" class="swal2-input" placeholder="Durée du traitement">' +
-        '<input id="sw-notes" class="swal2-input" placeholder="Notes médicales">' +
+        '<div class="grid grid-cols-1 gap-2 text-left">' +
+        `<label class="text-sm">Patient<select id="sw-p" class="swal2-select"><option value="">Patient</option>${pOptions}</select></label>` +
+        `<label class="text-sm">Médecin<select id="sw-d" class="swal2-select"><option value="">Médecin</option>${dOptions}</select></label>` +
+        '<label class="text-sm">Médicaments<input id="sw-meds" class="swal2-input" placeholder="Séparés par ,"></label>' +
+        '<label class="text-sm">Durée<input id="sw-duration" class="swal2-input" placeholder="Durée du traitement"></label>' +
+        '<label class="text-sm">Notes<input id="sw-notes" class="swal2-input" placeholder="Notes médicales"></label>' +
         '</div>',
       focusConfirm: false,
       showCancelButton: true,
       showCloseButton: true,
       confirmButtonText: 'Ajouter',
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: 'bg-blue-600 text-white rounded px-3 py-2',
+        cancelButton: 'bg-gray-200 text-gray-800 rounded px-3 py-2',
+        popup: 'rounded-lg'
+      },
       preConfirm: () => {
         const patientId = document.getElementById('sw-p').value;
         const doctorId = document.getElementById('sw-d').value;
@@ -110,11 +121,25 @@ document.addEventListener('DOMContentLoaded', () => {
   tbody.addEventListener('click', (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
-    if (t.classList.contains('del')) {
+    if (t.closest('.kebab')) {
+      const btn = t.closest('.kebab');
+      const cell = btn.parentElement;
+      document.querySelectorAll('.menu').forEach((m) => m.classList.add('hidden'));
+      const menu = cell.querySelector('.menu');
+      if (menu) menu.classList.toggle('hidden');
+      return;
+    }
+    if (t.classList.contains('menu-view')) {
+      const id = t.getAttribute('data-id');
+      window.location.href = 'info.html?type=prescriptions&id=' + encodeURIComponent(id);
+      return;
+    }
+    if (t.classList.contains('menu-del')) {
       const id = t.getAttribute('data-id');
       removeItem(HL_PRESCRIPTIONS, id);
       render();
-    } else if (t.classList.contains('edit')) {
+      Swal.fire({ icon: 'success', title: 'Supprimé', text: 'Prescription supprimée' });
+    } else if (t.classList.contains('menu-edit')) {
       const id = t.getAttribute('data-id');
       const items = list(HL_PRESCRIPTIONS);
       const r = items.find((x) => x.id === id);
