@@ -16,6 +16,19 @@
     <a href="index.html">Déconnexion</a>
   </nav>
   <h1>Patients</h1>
+  <div>
+    <input type="text" id="p-search" placeholder="Rechercher">
+    <select id="p-sort">
+      <option value="">Trier par</option>
+      <option value="nom">Nom</option>
+      <option value="age">Âge</option>
+      <option value="sexe">Sexe</option>
+    </select>
+    <select id="p-order">
+      <option value="asc">Asc</option>
+      <option value="desc">Desc</option>
+    </select>
+  </div>
   <form id="patient-form">
     <input type="text" id="p-nom" placeholder="Nom" required>
     <input type="number" id="p-age" placeholder="Âge" required>

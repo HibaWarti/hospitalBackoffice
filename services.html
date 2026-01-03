@@ -16,6 +16,18 @@
     <a href="index.html">Déconnexion</a>
   </nav>
   <h1>Services hospitaliers</h1>
+  <div>
+    <input type="text" id="s-search" placeholder="Rechercher">
+    <select id="s-sort">
+      <option value="">Trier par</option>
+      <option value="nom">Nom</option>
+      <option value="responsable">Responsable</option>
+    </select>
+    <select id="s-order">
+      <option value="asc">Asc</option>
+      <option value="desc">Desc</option>
+    </select>
+  </div>
   <form id="service-form">
     <input type="text" id="s-nom" placeholder="Nom du service" required>
     <input type="text" id="s-resp" placeholder="Responsable" required>

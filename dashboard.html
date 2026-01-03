@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HLSpital • Dashboard</title>
+  <title>Hospital • Dashboard</title>
 </head>
 <body>
   <nav>
@@ -16,13 +16,32 @@
     <a href="index.html">Déconnexion</a>
   </nav>
   <h1>Tableau de bord</h1>
-  <ul>
-    <li>Patients: -</li>
-    <li>Médecins: -</li>
-    <li>Rendez-vous: -</li>
-    <li>Prescriptions: -</li>
-    <li>Services: -</li>
+  <ul id="counts">
+    <li id="count-patients">Patients: -</li>
+    <li id="count-doctors">Médecins: -</li>
+    <li id="count-appointments">Rendez-vous: -</li>
+    <li id="count-prescriptions">Prescriptions: -</li>
+    <li id="count-services">Services: -</li>
   </ul>
+  <h2>Patients par sexe</h2>
+  <canvas id="chart-patients-sex" width="400" height="200"></canvas>
+  <h2>Rendez-vous par service</h2>
+  <canvas id="chart-appointments-service" width="400" height="200"></canvas>
+  <h2>Rendez-vous par jour</h2>
+  <canvas id="chart-appointments-day" width="400" height="200"></canvas>
+  <h2>Médecins par spécialité</h2>
+  <canvas id="chart-doctors-specialty" width="400" height="200"></canvas>
+  <h2>Rendez-vous par statut</h2>
+  <canvas id="chart-appointments-status" width="400" height="200"></canvas>
+  <script src="src/js/auth.js"></script>
+  <script src="src/js/guard.js"></script>
+  <script src="src/js/store.js"></script>
+  <script src="src/js/data.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="src/js/dashboard.js"></script>
+  <script>
+    requireAuth();
+    mountNav();
+  </script>
 </body>
 </html>
-
