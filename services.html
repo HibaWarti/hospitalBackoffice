@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HLSpital • Services</title>
+  <title>Hospital • Services</title>
 </head>
 <body>
   <nav>
@@ -16,17 +16,34 @@
     <a href="index.html">Déconnexion</a>
   </nav>
   <h1>Services hospitaliers</h1>
+  <form id="service-form">
+    <input type="text" id="s-nom" placeholder="Nom du service" required>
+    <input type="text" id="s-resp" placeholder="Responsable" required>
+    <input type="text" id="s-desc" placeholder="Description" required>
+    <button type="submit">Ajouter</button>
+    <button type="button" id="export-services">Exporter CSV</button>
+  </form>
   <table border="1" cellpadding="6">
     <thead>
       <tr>
         <th>Nom du service</th>
         <th>Responsable</th>
         <th>Description</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
     </tbody>
   </table>
+  <script src="src/js/auth.js"></script>
+  <script src="src/js/guard.js"></script>
+  <script src="src/js/store.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@faker-js/faker@8.4.1/dist/faker.umd.min.js"></script>
+  <script src="src/js/data.js"></script>
+  <script src="src/js/services.js"></script>
+  <script>
+    requireAuth();
+    mountNav();
+  </script>
 </body>
 </html>
-

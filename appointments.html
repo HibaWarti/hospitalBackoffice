@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HLSpital • Rendez-vous</title>
+  <title>Hospital • Rendez-vous</title>
 </head>
 <body>
   <nav>
@@ -16,6 +16,24 @@
     <a href="index.html">Déconnexion</a>
   </nav>
   <h1>Rendez-vous</h1>
+  <form id="appt-form">
+    <select id="a-patient" required>
+      <option value="">Patient</option>
+    </select>
+    <select id="a-doctor" required>
+      <option value="">Médecin</option>
+    </select>
+    <input type="date" id="a-date" required>
+    <input type="time" id="a-time" required>
+    <select id="a-status" required>
+      <option value="">Statut</option>
+      <option value="confirmé">confirmé</option>
+      <option value="annulé">annulé</option>
+      <option value="en attente">en attente</option>
+    </select>
+    <button type="submit">Ajouter</button>
+    <button type="button" id="export-appointments">Exporter CSV</button>
+  </form>
   <table border="1" cellpadding="6">
     <thead>
       <tr>
@@ -24,11 +42,21 @@
         <th>Date</th>
         <th>Heure</th>
         <th>Statut</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
     </tbody>
   </table>
+  <script src="src/js/auth.js"></script>
+  <script src="src/js/guard.js"></script>
+  <script src="src/js/store.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@faker-js/faker@8.4.1/dist/faker.umd.min.js"></script>
+  <script src="src/js/data.js"></script>
+  <script src="src/js/appointments.js"></script>
+  <script>
+    requireAuth();
+    mountNav();
+  </script>
 </body>
 </html>
-

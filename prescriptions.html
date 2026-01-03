@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HLSpital • Prescriptions</title>
+  <title>Hospital • Prescriptions</title>
 </head>
 <body>
   <nav>
@@ -16,6 +16,19 @@
     <a href="index.html">Déconnexion</a>
   </nav>
   <h1>Prescriptions</h1>
+  <form id="rx-form">
+    <select id="r-patient" required>
+      <option value="">Patient</option>
+    </select>
+    <select id="r-doctor" required>
+      <option value="">Médecin</option>
+    </select>
+    <input type="text" id="r-meds" placeholder="Médicaments (séparés par ,)" required>
+    <input type="text" id="r-duration" placeholder="Durée du traitement" required>
+    <input type="text" id="r-notes" placeholder="Notes médicales">
+    <button type="submit">Ajouter</button>
+    <button type="button" id="export-prescriptions">Exporter CSV</button>
+  </form>
   <table border="1" cellpadding="6">
     <thead>
       <tr>
@@ -24,11 +37,21 @@
         <th>Médicaments</th>
         <th>Durée</th>
         <th>Notes</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
     </tbody>
   </table>
+  <script src="src/js/auth.js"></script>
+  <script src="src/js/guard.js"></script>
+  <script src="src/js/store.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@faker-js/faker@8.4.1/dist/faker.umd.min.js"></script>
+  <script src="src/js/data.js"></script>
+  <script src="src/js/prescriptions.js"></script>
+  <script>
+    requireAuth();
+    mountNav();
+  </script>
 </body>
 </html>
-
