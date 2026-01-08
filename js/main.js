@@ -301,6 +301,12 @@ function renderShell(user) {
 }
 
 function navigateTo(key) {
+  // Security check: ensure user is authenticated before navigating
+  if (!App.Services.Auth.checkSession()) {
+    init();
+    return;
+  }
+
   const mainContent = document.getElementById("main-content");
   setActiveMenu(key);
   
@@ -346,6 +352,22 @@ function renderContent(key) {
 
   if (key === "patients") {
     return App.Pages.Patients.render();
+  }
+
+  if (key === "doctors") {
+    return App.Pages.Doctors.render();
+  }
+
+  if (key === "services") {
+    return App.Pages.Services.render();
+  }
+
+  if (key === "appointments") {
+    return App.Pages.Appointments.render();
+  }
+
+  if (key === "prescriptions") {
+    return App.Pages.Prescriptions.render();
   }
 
   const titles = {

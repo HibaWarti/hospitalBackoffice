@@ -175,13 +175,13 @@ function generateHTML() {
                       <div id="patient-menu-${patient.id}" class="hidden fixed w-48 rounded-md shadow-lg bg-white border border-border ring-1 ring-black ring-opacity-5 focus-visible:outline-none z-50">
                         <div class="py-1">
                           <button data-action="view" data-id="${patient.id}" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors flex items-center">
-                            <i data-lucide="eye" class="w-4 h-4 mr-2"></i>${t('view')}
+                            <i data-lucide="eye" class="w-4 h-4 ${gapClass}"></i>${t('view')}
                           </button>
                           <button data-action="edit" data-id="${patient.id}" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors flex items-center">
-                            <i data-lucide="pencil" class="w-4 h-4 mr-2"></i>${t('edit')}
+                            <i data-lucide="pencil" class="w-4 h-4 ${gapClass}"></i>${t('edit')}
                           </button>
                           <button data-action="delete" data-id="${patient.id}" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left transition-colors flex items-center text-destructive hover:bg-destructive/10">
-                            <i data-lucide="trash-2" class="w-4 h-4 mr-2"></i>${t('delete')}
+                            <i data-lucide="trash-2" class="w-4 h-4 ${gapClass}"></i>${t('delete')}
                           </button>
                         </div>
                       </div>
@@ -203,6 +203,7 @@ function generateHTML() {
 
       <div class="space-y-2 text-sm text-muted-foreground">
         <div class="text-center">${t("showing")} ${Math.min(startIndex + 1, filteredPatients.length)}-${Math.min(startIndex + patientsState.pageSize, filteredPatients.length)} ${t("of")} ${filteredPatients.length}</div>
+        ${totalPages > 1 ? `
         <div id="pagination" class="flex items-center justify-center gap-2">
           <button id="prev-page" ${patientsState.page === 1 ? 'disabled' : ''} class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-white hover:bg-accent hover:text-accent-foreground h-8 w-8 disabled:opacity-50">
             <i data-lucide="${prevIcon}" class="w-4 h-4"></i>
@@ -212,6 +213,7 @@ function generateHTML() {
             <i data-lucide="${nextIcon}" class="w-4 h-4"></i>
           </button>
         </div>
+        ` : ''}
       </div>
 
       <!-- Patient Form Modal -->
@@ -298,17 +300,20 @@ function generateHTML() {
         <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 class="text-lg font-semibold">${t("patientDetails")}</h2>
-            <div class="flex items-center gap-2">
-              <button id="patient-details-export" class="h-9 px-3 rounded-md border border-input bg-white hover:bg-accent hover:text-accent-foreground text-sm font-medium inline-flex items-center">
-                <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>${t("exportPDF")}
-              </button>
-              <button id="patient-details-close" class="text-muted-foreground hover:text-foreground">
-                <i data-lucide="x" class="w-5 h-5"></i>
-              </button>
-            </div>
+            <button id="patient-details-close-x" class="text-muted-foreground hover:text-foreground">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
           </div>
           <div id="patient-details-content" class="p-6 space-y-4">
             <!-- Content injected via JS -->
+          </div>
+          <div class="flex justify-end gap-3 p-6 border-t border-border">
+            <button id="patient-details-export" class="h-9 px-3 rounded-md border border-input bg-white hover:bg-accent hover:text-accent-foreground text-sm font-medium inline-flex items-center">
+              <i data-lucide="file-text" class="w-4 h-4 ${gapClass}"></i>${t("exportPDF")}
+            </button>
+            <button id="patient-details-close" class="h-9 px-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 text-sm font-medium transition-colors">
+              ${t("close")}
+            </button>
           </div>
         </div>
       </div>
@@ -485,6 +490,7 @@ function attachListeners(container) {
   container.querySelector("#patient-modal-close").addEventListener("click", closeModals);
   container.querySelector("#patient-modal-cancel").addEventListener("click", closeModals);
   container.querySelector("#patient-details-close").addEventListener("click", closeModals);
+  container.querySelector("#patient-details-close-x")?.addEventListener("click", closeModals);
 
   // Form Submit
   form.addEventListener("submit", (e) => {
