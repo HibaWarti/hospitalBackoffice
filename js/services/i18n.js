@@ -73,7 +73,8 @@ const translations = {
     noAppointments: "No appointments found.",
     medications: "Medications",
     noPrescriptions: "No prescriptions found.",
-    unknown: "Unknown"
+    unknown: "Unknown",
+    all: "All"
   },
   fr: {
     dashboard: "Tableau de bord",
@@ -187,7 +188,8 @@ const translations = {
     dermatology: "Dermatologie",
     generalMedicine: "Médecine Générale",
     surgery: "Chirurgie",
-    oncology: "Oncologie"
+    oncology: "Oncologie",
+    all: "Tout"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -305,7 +307,8 @@ const translations = {
     registrationDate: "تاريخ التسجيل",
     headDoctor: "رئيس القسم",
     serviceName: "اسم الخدمة",
-    prescriptionDate: "تاريخ الوصفة"
+    prescriptionDate: "تاريخ الوصفة",
+    all: "الكل"
   }
 };
 

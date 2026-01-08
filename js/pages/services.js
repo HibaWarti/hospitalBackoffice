@@ -16,7 +16,8 @@
     pageSize: 10,
     isModalOpen: false,
     editingId: null,
-    viewingId: null
+    viewingId: null,
+    filterInitial: ""
   };
 
   function render() {
@@ -46,14 +47,18 @@
     const gapClass = isRTL ? 'ml-2' : 'mr-2';
     const prevIcon = isRTL ? 'chevron-right' : 'chevron-left';
     const nextIcon = isRTL ? 'chevron-left' : 'chevron-right';
+    const initials = [...new Set(allServices.map(s => (s.name || '').trim().charAt(0).toUpperCase()).filter(Boolean))].sort();
     
     // Filter
     let filteredServices = allServices.filter(service => {
       const searchLower = servicesState.search.toLowerCase();
-      return (
+      const matchesSearch = (
         service.name.toLowerCase().includes(searchLower) ||
         (service.description && service.description.toLowerCase().includes(searchLower))
       );
+      const first = (service.name || '').trim().charAt(0).toUpperCase();
+      const matchesInitial = servicesState.filterInitial ? first === servicesState.filterInitial : true;
+      return matchesSearch && matchesInitial;
     });
 
     // Sort
@@ -172,7 +177,7 @@
               class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
-          <div class="flex gap-2">
+        <div class="flex gap-2">
             <div class="relative inline-block text-left">
               <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-white hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
                 <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
@@ -185,6 +190,10 @@
                 </div>
               </div>
             </div>
+            <select id="name-filter" class="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <option value="">${t("all")}</option>
+              ${initials.map(ch => `<option value="${ch}">${ch}</option>`).join('')}
+            </select>
             <button id="add-service-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-9 px-4 py-2">
               <i data-lucide="plus" class="w-4 h-4 ${gapClass}"></i>
               ${t("add")}
@@ -297,6 +306,16 @@
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             servicesState.search = e.target.value;
+            servicesState.page = 1;
+            renderPage();
+        });
+    }
+    
+    // Initial letter filter
+    const nameFilter = container.querySelector('#name-filter');
+    if (nameFilter) {
+        nameFilter.addEventListener('change', (e) => {
+            servicesState.filterInitial = e.target.value;
             servicesState.page = 1;
             renderPage();
         });

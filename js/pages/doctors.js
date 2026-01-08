@@ -16,7 +16,8 @@
     pageSize: 10,
     isModalOpen: false,
     editingId: null,
-    viewingId: null // Added for view modal
+    viewingId: null, // Added for view modal
+    filterSpecialty: ""
   };
 
   function render() {
@@ -45,17 +46,20 @@
     const allDoctors = getDoctors();
     const isRTL = document.documentElement.dir === 'rtl';
     const gapClass = isRTL ? 'ml-2' : 'mr-2';
+    const specialties = [...new Set(allDoctors.map(d => d.specialty))].filter(Boolean).sort();
     
     // Filter
     let filteredDoctors = allDoctors.filter(doctor => {
       const searchLower = doctorsState.search.toLowerCase();
-      return (
+      const matchesSearch = (
         doctor.firstName.toLowerCase().includes(searchLower) ||
         doctor.lastName.toLowerCase().includes(searchLower) ||
         doctor.email.toLowerCase().includes(searchLower) ||
         doctor.phone.includes(searchLower) ||
         doctor.specialty.toLowerCase().includes(searchLower)
       );
+      const matchesSpecialty = doctorsState.filterSpecialty ? String(doctor.specialty) === String(doctorsState.filterSpecialty) : true;
+      return matchesSearch && matchesSpecialty;
     });
 
     // Sort
@@ -226,7 +230,7 @@
               class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
-          <div class="flex gap-2">
+        <div class="flex gap-2">
             <div class="relative inline-block text-left">
               <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-white hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
                 <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
@@ -239,6 +243,10 @@
                 </div>
               </div>
             </div>
+            <select id="specialty-filter" class="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <option value="">${t("all")}</option>
+              ${specialties.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
             <button id="add-doctor-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-9 px-4 py-2">
               <i data-lucide="plus" class="w-4 h-4 ${gapClass}"></i>
               ${t("add")}
@@ -368,6 +376,16 @@
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             doctorsState.search = e.target.value;
+            doctorsState.page = 1;
+            renderPage();
+        });
+    }
+    
+    // Specialty Filter
+    const specialtyFilter = container.querySelector('#specialty-filter');
+    if (specialtyFilter) {
+        specialtyFilter.addEventListener('change', (e) => {
+            doctorsState.filterSpecialty = e.target.value;
             doctorsState.page = 1;
             renderPage();
         });

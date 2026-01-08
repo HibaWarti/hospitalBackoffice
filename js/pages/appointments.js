@@ -23,7 +23,9 @@
     pageSize: 10,
     isModalOpen: false,
     editingId: null,
-    viewingId: null
+    viewingId: null,
+    filterDoctorId: "",
+    filterStatus: ""
   };
 
   function render() {
@@ -73,11 +75,14 @@
     // Filter
     let filteredAppointments = enrichedAppointments.filter(app => {
       const searchLower = appointmentsState.search.toLowerCase();
-      return (
+      const matchesSearch = (
         app.patientName.toLowerCase().includes(searchLower) ||
         app.doctorName.toLowerCase().includes(searchLower) ||
         app.status.toLowerCase().includes(searchLower)
       );
+      const matchesDoctor = appointmentsState.filterDoctorId ? String(app.doctorId) === String(appointmentsState.filterDoctorId) : true;
+      const matchesStatus = appointmentsState.filterStatus ? String(app.status) === String(appointmentsState.filterStatus) : true;
+      return matchesSearch && matchesDoctor && matchesStatus;
     });
 
     // Sort
@@ -264,7 +269,7 @@
               class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
-          <div class="flex gap-2">
+        <div class="flex gap-2">
             <div class="relative inline-block text-left">
               <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-white hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
                 <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
@@ -277,6 +282,16 @@
                 </div>
               </div>
             </div>
+            <select id="doctor-filter" class="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <option value="">${t("all")}</option>
+              ${doctors.map(d => `<option value="${d.id}">${d.firstName} ${d.lastName}</option>`).join('')}
+            </select>
+            <select id="status-filter" class="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <option value="">${t("all")}</option>
+              <option value="scheduled">${t("scheduled")}</option>
+              <option value="completed">${t("completed")}</option>
+              <option value="cancelled">${t("cancelled")}</option>
+            </select>
             <button id="add-appointment-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-9 px-4 py-2">
               <i data-lucide="plus" class="w-4 h-4 ${gapClass}"></i>
               ${t("add")}
@@ -494,6 +509,24 @@
     if (searchInput) {
         searchInput.addEventListener("input", (e) => {
             appointmentsState.search = e.target.value;
+            appointmentsState.page = 1;
+            updateContent(container);
+        });
+    }
+    
+    // Filters
+    const doctorFilter = container.querySelector("#doctor-filter");
+    if (doctorFilter) {
+        doctorFilter.addEventListener("change", (e) => {
+            appointmentsState.filterDoctorId = e.target.value;
+            appointmentsState.page = 1;
+            updateContent(container);
+        });
+    }
+    const statusFilter = container.querySelector("#status-filter");
+    if (statusFilter) {
+        statusFilter.addEventListener("change", (e) => {
+            appointmentsState.filterStatus = e.target.value;
             appointmentsState.page = 1;
             updateContent(container);
         });

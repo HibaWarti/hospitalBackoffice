@@ -14,7 +14,8 @@ let patientsState = {
   sortKey: null,
   sortOrder: "asc",
   page: 1,
-  pageSize: 10
+  pageSize: 10,
+  filterServiceId: ""
 };
 
 function render() {
@@ -41,18 +42,21 @@ function updateContent(container) {
 
 function generateHTML() {
   const allPatients = getPatients();
+  const services = getServices();
   const isRTL = document.documentElement.dir === 'rtl';
   const gapClass = isRTL ? 'ml-2' : 'mr-2';
   
   // Filter
   let filteredPatients = allPatients.filter(patient => {
     const searchLower = patientsState.search.toLowerCase();
-    return (
+    const matchesSearch = (
       patient.firstName.toLowerCase().includes(searchLower) ||
       patient.lastName.toLowerCase().includes(searchLower) ||
       patient.email.toLowerCase().includes(searchLower) ||
       patient.phone.includes(searchLower)
     );
+    const matchesService = patientsState.filterServiceId ? String(patient.serviceId || "") === String(patientsState.filterServiceId) : true;
+    return matchesSearch && matchesService;
   });
 
   // Sort
@@ -106,15 +110,21 @@ function generateHTML() {
       <h1 class="text-3xl font-heading font-bold">${t("patients")}</h1>
       
       <div class="flex flex-col sm:flex-row gap-4 justify-between">
-        <div class="relative flex-1 max-w-sm">
-          <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
-          <input 
-            type="text" 
-            id="search-input" 
-            placeholder="${t("search")}" 
-            value="${patientsState.search}"
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-          />
+        <div class="flex flex-1 gap-2 max-w-lg">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+            <input 
+              type="text" 
+              id="search-input" 
+              placeholder="${t("search")}" 
+              value="${patientsState.search}"
+              class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            />
+          </div>
+          <select id="service-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <option value="">${t("all")}</option>
+            ${services.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+          </select>
         </div>
         <div class="flex gap-2">
           <div class="relative inline-block text-left">
@@ -410,6 +420,16 @@ function attachListeners(container) {
     patientsState.page = 1; 
     updateContent(container);
   });
+  
+  // Service Filter
+  const serviceFilter = container.querySelector("#service-filter");
+  if (serviceFilter) {
+    serviceFilter.addEventListener("change", (e) => {
+      patientsState.filterServiceId = e.target.value;
+      patientsState.page = 1;
+      updateContent(container);
+    });
+  }
 
   // Sort
   container.querySelectorAll("th[data-sort]").forEach(th => {
