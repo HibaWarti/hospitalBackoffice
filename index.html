@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medicare Dashboard - Vanilla Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./css/style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        safelist: [
+          // Sidebar + navbar colors used in JS templates
+          "bg-sidebar",
+          "text-sidebar-foreground",
+          "border-sidebar-border",
+          "bg-sidebar-accent",
+          "text-sidebar-accent-foreground",
+          "bg-sidebar-primary",
+          "text-sidebar-primary-foreground",
+          // Stat card icon backgrounds
+          "bg-primary",
+          "bg-accent",
+          "bg-success",
+          "bg-warning",
+          "bg-info",
+          // Transparent backgrounds for stats
+          "bg-primary/10",
+          "bg-accent/10",
+          "bg-success/10",
+          "bg-warning/10",
+          "bg-info/10",
+          // Text colors for stats
+          "text-primary",
+          "text-accent",
+          "text-success",
+          "text-warning",
+          "text-info",
+        ],
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+              heading: ["Poppins", "system-ui", "sans-serif"],
+            },
+            colors: {
+              border: "hsl(var(--border) / <alpha-value>)",
+              input: "hsl(var(--input) / <alpha-value>)",
+              ring: "hsl(var(--ring) / <alpha-value>)",
+              background: "hsl(var(--background) / <alpha-value>)",
+              foreground: "hsl(var(--foreground) / <alpha-value>)",
+              primary: {
+                DEFAULT: "hsl(var(--primary) / <alpha-value>)",
+                foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
+              },
+              secondary: {
+                DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
+                foreground: "hsl(var(--secondary-foreground) / <alpha-value>)",
+              },
+              success: {
+                DEFAULT: "hsl(var(--success) / <alpha-value>)",
+                foreground: "hsl(var(--success-foreground) / <alpha-value>)",
+              },
+              warning: {
+                DEFAULT: "hsl(var(--warning) / <alpha-value>)",
+                foreground: "hsl(var(--warning-foreground) / <alpha-value>)",
+              },
+              info: {
+                DEFAULT: "hsl(var(--info) / <alpha-value>)",
+                foreground: "hsl(var(--info-foreground) / <alpha-value>)",
+              },
+              destructive: {
+                DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
+                foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
+              },
+              muted: {
+                DEFAULT: "hsl(var(--muted) / <alpha-value>)",
+                foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
+              },
+              accent: {
+                DEFAULT: "hsl(var(--accent) / <alpha-value>)",
+                foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
+              },
+              card: {
+                DEFAULT: "hsl(var(--card) / <alpha-value>)",
+                foreground: "hsl(var(--card-foreground) / <alpha-value>)",
+              },
+              sidebar: {
+                DEFAULT: "hsl(var(--sidebar-background) / <alpha-value>)",
+                foreground: "hsl(var(--sidebar-foreground) / <alpha-value>)",
+                primary: "hsl(var(--sidebar-primary) / <alpha-value>)",
+                "primary-foreground": "hsl(var(--sidebar-primary-foreground) / <alpha-value>)",
+                accent: "hsl(var(--sidebar-accent) / <alpha-value>)",
+                "accent-foreground": "hsl(var(--sidebar-accent-foreground) / <alpha-value>)",
+                border: "hsl(var(--sidebar-border) / <alpha-value>)",
+                ring: "hsl(var(--sidebar-ring) / <alpha-value>)",
+              },
+            },
+            borderRadius: {
+              lg: "var(--radius)",
+              md: "calc(var(--radius) - 2px)",
+              sm: "calc(var(--radius) - 4px)",
+            },
+            keyframes: {
+              "fade-in": {
+                from: { opacity: 0, transform: "translateY(8px)" },
+                to: { opacity: 1, transform: "translateY(0)" },
+              },
+            },
+            animation: {
+              "fade-in": "fade-in 0.35s ease-out",
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="h-full bg-background text-foreground">
+    <div id="app-root" class="min-h-screen"></div>
+    <script src="./js/services/auth.js"></script>
+    <script src="./js/services/i18n.js"></script>
+    <script src="./js/services/data.js"></script>
+    <script src="./js/services/utils.js"></script>
+    <script src="./js/pages/dashboard.js"></script>
+    <script src="./js/pages/patients.js"></script>
+    <script src="./js/main.js"></script>
+  </body>
+</html>
