@@ -10,6 +10,7 @@ const translations = {
     logout: "Logout",
     hospital: "Hospital",
     backoffice: "Backoffice",
+    reset: "Reset",
     search: "Search...",
     export: "Export",
     add: "Add",
@@ -86,6 +87,7 @@ const translations = {
     logout: "Déconnexion",
     hospital: "Hôpital",
     backoffice: "Administration",
+    reset: "Réinitialiser",
     search: "Rechercher...",
     export: "Exporter",
     add: "Ajouter",
@@ -200,7 +202,8 @@ const translations = {
     prescriptions: "الوصفات الطبية",
     logout: "تسجيل الخروج",
     hospital: "مستشفى",
-    backoffice: "المكتب الخلفي",
+    backoffice: "الإدارة",
+    reset: "إعادة تعيين",
     search: "بحث...",
     export: "تصدير",
     add: "إضافة",
@@ -335,9 +338,9 @@ function getCurrentLang() {
 setLanguage(currentLang);
 
 const languages = [
-  { code: "en", label: "English", flag: "🇬🇧", dir: "ltr" },
-  { code: "fr", label: "Français", flag: "🇫🇷", dir: "ltr" },
-  { code: "ar", label: "العربية", flag: "🇸🇦", dir: "rtl" },
+  { code: "en", label: "English", flag: "https://flagcdn.com/w40/gb.png", dir: "ltr" },
+  { code: "fr", label: "Français", flag: "https://flagcdn.com/w40/fr.png", dir: "ltr" },
+  { code: "ar", label: "العربية", flag: "https://flagcdn.com/w40/ma.png", dir: "rtl" },
 ];
 window.App = window.App || {};
 App.Services = App.Services || {};

@@ -14,6 +14,7 @@
   function t(key) { return App.Services.I18n.t(key); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+  function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
 
   // State
   const prescriptionsState = {
@@ -69,12 +70,45 @@
       return matchesSearch && matchesDoctor;
     });
 
+    // Sort
+    if (prescriptionsState.sortKey) {
+      filtered.sort((a, b) => {
+        let aValue = a[prescriptionsState.sortKey];
+        let bValue = b[prescriptionsState.sortKey];
+
+        // Handle specific fields if needed
+        if (prescriptionsState.sortKey === 'patientName') {
+           const pA = getPatient(a.patientId);
+           const pB = getPatient(b.patientId);
+           aValue = pA ? pA.fullName.toLowerCase() : '';
+           bValue = pB ? pB.fullName.toLowerCase() : '';
+        } else if (prescriptionsState.sortKey === 'doctorName') {
+           const dA = getDoctor(a.doctorId);
+           const dB = getDoctor(b.doctorId);
+           aValue = dA ? dA.name.toLowerCase() : '';
+           bValue = dB ? dB.name.toLowerCase() : '';
+        } else {
+           aValue = String(aValue).toLowerCase();
+           bValue = String(bValue).toLowerCase();
+        }
+
+        if (aValue < bValue) return prescriptionsState.sortOrder === 'asc' ? -1 : 1;
+        if (aValue > bValue) return prescriptionsState.sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
     // Pagination
     const totalPages = Math.ceil(filtered.length / prescriptionsState.itemsPerPage);
     if (prescriptionsState.page > totalPages) prescriptionsState.page = totalPages || 1;
     
     const startIdx = (prescriptionsState.page - 1) * prescriptionsState.itemsPerPage;
     const paginated = filtered.slice(startIdx, startIdx + prescriptionsState.itemsPerPage);
+
+    function renderSortIcon(key) {
+      if (prescriptionsState.sortKey !== key) return '';
+      return `<i data-lucide="${prescriptionsState.sortOrder === 'asc' ? 'arrow-up' : 'arrow-down'}" class="w-4 h-4 ml-1 inline-block"></i>`;
+    }
 
     // Pagination HTML
     let paginationHTML = '';
@@ -122,61 +156,72 @@
 
     return `
       <div class="space-y-6 animate-fade-in">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h1 class="text-3xl font-heading font-bold">${t("prescriptions")}</h1>
-            <div class="flex gap-2">
-                <button id="add-prescription-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4">
-                    <i data-lucide="plus" class="w-4 h-4 ${gapClass}"></i>
-                    ${t("addPrescription")}
-                </button>
-                <div class="relative inline-block text-left">
-                    <button id="export-menu-btn" type="button" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4">
-                        <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
-                        ${t("export")}
-                    </button>
-                    <div id="export-menu" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white border border-border ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                        <div class="py-1">
-                            <button id="export-csv" class="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground">
-                                ${t("exportCSV")}
-                            </button>
-                            <button id="export-pdf" class="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground">
-                                ${t("exportPDF")}
-                            </button>
-                        </div>
+        <div class="flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-3xl font-heading font-bold">${t("prescriptions")}</h1>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-between">
+                <div class="flex flex-1 gap-2 max-w-lg">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                        <input
+                            type="text"
+                            id="search-input"
+                            placeholder="${t("search")}"
+                            value="${prescriptionsState.searchQuery}"
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="flex flex-col sm:flex-row gap-4 justify-between">
-            <div class="flex flex-1 gap-2 max-w-lg">
-                <div class="relative flex-1">
-                    <i data-lucide="search" class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"></i>
-                    <input
-                        type="text"
-                        id="search-input"
-                        placeholder="${t("search")}"
-                        value="${prescriptionsState.searchQuery}"
-                        class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-9 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
+
+                <div class="flex gap-2">
+                    <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-white hover:bg-accent hover:text-accent-foreground h-10 px-3">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4 ${gapClass}"></i>
+                        ${t("reset")}
+                    </button>
+                    <div class="relative inline-block text-left">
+                        <button id="export-menu-btn" type="button" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4">
+                            <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
+                            ${t("export")}
+                        </button>
+                        <div id="export-menu" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white border border-border ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                            <div class="py-1">
+                                <button id="export-csv" class="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground">
+                                    ${t("exportCSV")}
+                                </button>
+                                <button id="export-pdf" class="w-full text-left px-4 py-2 text-sm hover:bg-accent hover:text-accent-foreground">
+                                    ${t("exportPDF")}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="add-prescription-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4">
+                        <i data-lucide="plus" class="w-4 h-4 ${gapClass}"></i>
+                        ${t("add")}
+                    </button>
                 </div>
-                <select id="doctor-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                    <option value="">${t("doctor")}: ${t("total")}</option>
-                    ${doctorOptions}
-                </select>
             </div>
         </div>
 
         <div class="rounded-md border border-border bg-card text-card-foreground shadow-sm overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left">
+            <table class="w-full text-sm text-left rtl:text-right">
               <thead class="bg-muted/50 text-muted-foreground">
                 <tr>
-                  <th class="h-12 px-4 align-middle font-medium">${t("medications")}</th>
-                  <th class="h-12 px-4 align-middle font-medium">${t("patient")}</th>
-                  <th class="h-12 px-4 align-middle font-medium">${t("doctor")}</th>
-                  <th class="h-12 px-4 align-middle font-medium">${t("date")}</th>
-                  <th class="h-12 px-4 align-middle font-medium text-right">${t("actions")}</th>
+                  <th class="h-12 px-4 align-middle font-medium cursor-pointer hover:text-foreground transition-colors" data-sort="medications">
+                    <div class="flex items-center ${isRTL ? 'flex-row-reverse' : ''}">${t("medications")} ${renderSortIcon('medications')}</div>
+                  </th>
+                  <th class="h-12 px-4 align-middle font-medium cursor-pointer hover:text-foreground transition-colors" data-sort="patientName">
+                    <div class="flex items-center ${isRTL ? 'flex-row-reverse' : ''}">${t("patient")} ${renderSortIcon('patientName')}</div>
+                  </th>
+                  <th class="h-12 px-4 align-middle font-medium cursor-pointer hover:text-foreground transition-colors" data-sort="doctorName">
+                    <div class="flex items-center ${isRTL ? 'flex-row-reverse' : ''}">${t("doctor")} ${renderSortIcon('doctorName')}</div>
+                  </th>
+                  <th class="h-12 px-4 align-middle font-medium cursor-pointer hover:text-foreground transition-colors" data-sort="date">
+                    <div class="flex items-center ${isRTL ? 'flex-row-reverse' : ''}">${t("date")} ${renderSortIcon('date')}</div>
+                  </th>
+                  <th class="h-12 px-4 align-middle font-medium text-right rtl:text-left">${t("actions")}</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-border">
@@ -189,8 +234,8 @@
                     <td class="p-4 align-middle">${patient ? patient.fullName : t("unknown")}</td>
                     <td class="p-4 align-middle">${doctor ? doctor.name : t("unknown")}</td>
                     <td class="p-4 align-middle">${p.date}</td>
-                    <td class="p-4 align-middle text-right">
-                      <div class="relative inline-block text-left">
+                    <td class="p-4 align-middle text-right rtl:text-left">
+                      <div class="relative inline-block text-left rtl:text-right">
                         <button data-action="menu" data-id="${p.id}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8">
                           <i data-lucide="more-horizontal" class="w-4 h-4"></i>
                         </button>
@@ -222,8 +267,8 @@
           </div>
         </div>
         ${paginationHTML}
-        ${renderModals(isRTL)}
       </div>
+      ${renderModals(isRTL)}
     `;
   }
 
@@ -236,8 +281,8 @@
     let addModalHTML = '';
     if (prescriptionsState.isAddModalOpen) {
       addModalHTML = `
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 global-overlay">
-          <div class="bg-background rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+        <div class="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay">
+          <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between p-4 border-b">
               <h2 class="text-lg font-semibold">${t('addPrescription')}</h2>
               <button data-action="close-modal" class="text-muted-foreground hover:text-foreground">
@@ -288,8 +333,8 @@
     if (prescriptionsState.isEditModalOpen && prescriptionsState.selectedPrescription) {
       const p = prescriptionsState.selectedPrescription;
       editModalHTML = `
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 global-overlay">
-          <div class="bg-background rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+        <div class="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay">
+          <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between p-4 border-b">
               <h2 class="text-lg font-semibold">${t('editPrescription')}</h2>
               <button data-action="close-modal" class="text-muted-foreground hover:text-foreground">
@@ -342,8 +387,8 @@
       const patient = getPatient(p.patientId);
       const doctor = getDoctor(p.doctorId);
       viewModalHTML = `
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 global-overlay">
-          <div class="bg-background rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+        <div class="fixed inset-0 z-[1001] flex items-center justify-center bg-black/50 backdrop-blur-sm global-overlay">
+          <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between p-4 border-b">
               <h2 class="text-lg font-semibold">${t('prescriptionDetails')}</h2>
               <button data-action="close-modal" class="text-muted-foreground hover:text-foreground">
@@ -483,18 +528,44 @@
         });
     }
 
-    // Sorting
+    // Sort headers
     container.querySelectorAll('th[data-sort]').forEach(th => {
-        th.addEventListener('click', () => {
-            const key = th.getAttribute('data-sort');
-            if (prescriptionsState.sortKey === key) {
-                prescriptionsState.sortOrder = prescriptionsState.sortOrder === 'asc' ? 'desc' : 'asc';
-            } else {
-                prescriptionsState.sortKey = key;
-                prescriptionsState.sortOrder = 'asc';
-            }
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        if (prescriptionsState.sortKey === key) {
+          prescriptionsState.sortOrder = prescriptionsState.sortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+          prescriptionsState.sortKey = key;
+          prescriptionsState.sortOrder = 'asc';
+        }
+        updateContent(container);
+      });
+    });
+
+    const resetBtn = container.querySelector('#reset-filters-btn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            prescriptionsState.searchQuery = "";
+            prescriptionsState.filterDoctorId = "";
+            prescriptionsState.sortKey = null;
+            prescriptionsState.sortOrder = "desc";
+            prescriptionsState.page = 1;
             updateContent(container);
         });
+    }
+
+    // Sort
+    container.querySelectorAll('th[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        if (prescriptionsState.sortKey === key) {
+          prescriptionsState.sortOrder = prescriptionsState.sortOrder === 'asc' ? 'desc' : 'asc';
+        } else {
+          prescriptionsState.sortKey = key;
+          prescriptionsState.sortOrder = 'asc';
+        }
+        updateContent(container);
+      });
     });
 
     // Export Menu
@@ -514,13 +585,23 @@
 
     container.querySelector('#export-csv')?.addEventListener('click', () => {
         const prescriptions = getPrescriptions();
-        exportToCSV(prescriptions, 'prescriptions-export', ['medications', 'dosage', 'date']);
+        const columns = [
+            { key: 'medications', header: t('medications') },
+            { key: 'dosage', header: t('dosage') },
+            { key: 'date', header: t('date') }
+        ];
+        exportToCSV(prescriptions, 'prescriptions-export', columns);
         exportMenu.classList.add('hidden');
     });
 
     container.querySelector('#export-pdf')?.addEventListener('click', () => {
         const prescriptions = getPrescriptions();
-        exportToPDF(prescriptions, 'prescriptions-export', 'Prescriptions List', ['medications', 'dosage', 'date']);
+        const columns = [
+            { key: 'medications', header: t('medications') },
+            { key: 'dosage', header: t('dosage') },
+            { key: 'date', header: t('date') }
+        ];
+        exportToPDF(prescriptions, 'prescriptions-export', 'Prescriptions List', columns);
         exportMenu.classList.add('hidden');
     });
 
@@ -590,7 +671,13 @@
     container.querySelector('#view-export-pdf')?.addEventListener('click', () => {
          if (prescriptionsState.selectedPrescription) {
              const p = prescriptionsState.selectedPrescription;
-             exportToPDF([p], `prescription-${p.id}`, `Prescription Details`, ['medications', 'dosage', 'date']);
+             // Find the modal content to export
+             // The modal is the last one rendered in viewModalHTML, it has a specific structure
+             // We can target the visible modal content
+             const modalContent = container.querySelector('.global-overlay .bg-white');
+             if (modalContent) {
+                exportElementToPDF(modalContent, `prescription-${p.id}`);
+             }
          }
     });
 

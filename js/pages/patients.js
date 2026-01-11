@@ -8,14 +8,16 @@ function getServices() { return App.Services.Data.getServices(); }
 function t(key) { return App.Services.I18n.t(key); }
 function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
 function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+  function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
+  function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
 
-let patientsState = {
+  let patientsState = {
   search: "",
   sortKey: null,
   sortOrder: "asc",
   page: 1,
   pageSize: 10,
-  filterServiceId: ""
+  filterBloodGroup: ""
 };
 
 function render() {
@@ -29,6 +31,12 @@ function updateContent(container) {
   container.innerHTML = generateHTML();
   lucide.createIcons();
   attachListeners(container);
+  
+  // Set filter values
+  const bloodTypeFilter = container.querySelector('#blood-type-filter');
+  if (bloodTypeFilter) {
+      bloodTypeFilter.value = patientsState.filterBloodGroup;
+  }
   
   // Restore focus if searching
   if (patientsState.search) {
@@ -55,8 +63,8 @@ function generateHTML() {
       patient.email.toLowerCase().includes(searchLower) ||
       patient.phone.includes(searchLower)
     );
-    const matchesService = patientsState.filterServiceId ? String(patient.serviceId || "") === String(patientsState.filterServiceId) : true;
-    return matchesSearch && matchesService;
+    const matchesBloodGroup = patientsState.filterBloodGroup ? patient.bloodGroup === patientsState.filterBloodGroup : true;
+    return matchesSearch && matchesBloodGroup;
   });
 
   // Sort
@@ -75,7 +83,7 @@ function generateHTML() {
   const paginatedPatients = filteredPatients.slice(startIndex, startIndex + patientsState.pageSize);
 
   const renderSortIcon = (key) => {
-    return '<i data-lucide="arrow-up-down" class="w-4 h-4 ml-1"></i>';
+    return '<i data-lucide="arrow-up-down" class="w-4 h-4 ms-1"></i>';
   };
   const prevIcon = isRTL ? 'chevron-right' : 'chevron-left';
   const nextIcon = isRTL ? 'chevron-left' : 'chevron-right';
@@ -121,12 +129,23 @@ function generateHTML() {
               class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
-          <select id="service-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-            <option value="">${t("all")}</option>
-            ${services.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}
+          <select id="blood-type-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <option value="">${t("bloodGroup")}</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
           </select>
         </div>
         <div class="flex gap-2">
+          <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-white hover:bg-accent hover:text-accent-foreground h-9 px-3">
+            <i data-lucide="rotate-ccw" class="w-4 h-4 ${gapClass}"></i>
+            ${t("reset")}
+          </button>
           <div class="relative inline-block text-left">
             <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-white hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
               <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
@@ -148,9 +167,9 @@ function generateHTML() {
 
       <div class="rounded-lg border border-border bg-card overflow-visible">
         <div class="overflow-x-auto">
-          <table class="w-full text-sm">
+          <table class="w-full text-sm" dir="${isRTL ? 'rtl' : 'ltr'}">
             <thead class="bg-secondary/50 border-b border-border">
-              <tr class="text-left">
+              <tr class="${isRTL ? 'text-right' : 'text-left'}">
                 <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="firstName">
                   <div class="flex items-center">${t("firstName")} ${renderSortIcon('firstName')}</div>
                 </th>
@@ -160,24 +179,28 @@ function generateHTML() {
                 <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="email">
                   <div class="flex items-center">${t("email")} ${renderSortIcon('email')}</div>
                 </th>
-                <th class="h-12 px-4 font-medium text-muted-foreground">${t("phone")}</th>
-                <th class="h-12 px-4 font-medium text-muted-foreground">${t("bloodGroup")}</th>
-                <th class="h-12 px-4 font-medium text-muted-foreground text-right">${t("actions")}</th>
+                <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="phone">
+                  <div class="flex items-center">${t("phone")} ${renderSortIcon('phone')}</div>
+                </th>
+                <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="bloodGroup">
+                  <div class="flex items-center">${t("bloodGroup")} ${renderSortIcon('bloodGroup')}</div>
+                </th>
+                <th class="h-12 px-4 font-medium text-muted-foreground text-right rtl:text-left">${t("actions")}</th>
               </tr>
             </thead>
             <tbody id="patients-table-body" class="divide-y divide-border">
               ${paginatedPatients.map(patient => `
                 <tr class="hover:bg-muted transition-colors group">
-                  <td class="p-4 font-medium">${patient.firstName}</td>
-                  <td class="p-4">${patient.lastName}</td>
-                  <td class="p-4 text-muted-foreground">${patient.email}</td>
-                  <td class="p-4 text-muted-foreground">${patient.phone}</td>
-                  <td class="p-4">
+                  <td class="p-4 font-medium ${isRTL ? 'text-right' : 'text-left'}">${patient.firstName}</td>
+                  <td class="p-4 ${isRTL ? 'text-right' : 'text-left'}">${patient.lastName}</td>
+                  <td class="p-4 text-muted-foreground ${isRTL ? 'text-right' : 'text-left'}">${patient.email}</td>
+                  <td class="p-4 text-muted-foreground ${isRTL ? 'text-right' : 'text-left'}">${patient.phone}</td>
+                  <td class="p-4 ${isRTL ? 'text-right' : 'text-left'}">
                     <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
                       ${patient.bloodGroup}
                     </span>
                   </td>
-                  <td class="p-4 text-right">
+                  <td class="p-4 ${isRTL ? 'text-left' : 'text-right'}">
                     <div class="relative inline-block text-left">
                       <button data-action="menu" data-id="${patient.id}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8">
                         <i data-lucide="more-horizontal" class="w-4 h-4"></i>
@@ -227,7 +250,7 @@ function generateHTML() {
       </div>
 
       <!-- Patient Form Modal -->
-      <div id="patient-modal" class="fixed inset-0 z-[1001] hidden items-center justify-center p-4">
+      <div id="patient-modal" class="fixed inset-0 z-[1001] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay">
         <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in max-h-[90vh] overflow-y-auto">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 id="patient-modal-title" class="text-lg font-semibold">${t("addPatient")}</h2>
@@ -306,7 +329,7 @@ function generateHTML() {
       </div>
 
        <!-- View Details Modal -->
-      <div id="patient-details-modal" class="fixed inset-0 z-[1001] hidden items-center justify-center p-4">
+      <div id="patient-details-modal" class="fixed inset-0 z-[1001] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay">
         <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 class="text-lg font-semibold">${t("patientDetails")}</h2>
@@ -421,11 +444,25 @@ function attachListeners(container) {
     updateContent(container);
   });
   
-  // Service Filter
-  const serviceFilter = container.querySelector("#service-filter");
-  if (serviceFilter) {
-    serviceFilter.addEventListener("change", (e) => {
-      patientsState.filterServiceId = e.target.value;
+  // Blood Type Filter
+  const bloodTypeFilter = container.querySelector("#blood-type-filter");
+  if (bloodTypeFilter) {
+    bloodTypeFilter.value = patientsState.filterBloodGroup || "";
+    bloodTypeFilter.addEventListener("change", (e) => {
+      patientsState.filterBloodGroup = e.target.value;
+      patientsState.page = 1;
+      updateContent(container);
+    });
+  }
+
+  // Reset Button
+  const resetBtn = container.querySelector("#reset-filters-btn");
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      patientsState.search = "";
+      patientsState.filterBloodGroup = "";
+      patientsState.sortKey = null;
+      patientsState.sortOrder = "asc";
       patientsState.page = 1;
       updateContent(container);
     });
@@ -611,20 +648,14 @@ function attachListeners(container) {
       detailsModal.classList.remove("hidden");
       detailsModal.classList.add("flex");
       const exportBtn = detailsModal.querySelector('#patient-details-export');
-      exportBtn?.addEventListener('click', () => {
-        const columns = [
-          { key: 'firstName', header: t('firstName') },
-          { key: 'lastName', header: t('lastName') },
-          { key: 'email', header: t('email') },
-          { key: 'phone', header: t('phone') },
-          { key: 'bloodGroup', header: t('bloodGroup') },
-          { key: 'gender', header: t('gender') },
-          { key: 'dateOfBirth', header: t('dateOfBirth') },
-          { key: 'address', header: t('address') },
-        ];
-        const baseName = `${String(patient.firstName || '').trim()}_${String(patient.lastName || '').trim()}`.replace(/\s+/g, '_').replace(/[^\w\-]/g, '') || 'patient';
-        App.Services.Utils.exportToPDF([patient], baseName, t('patientDetails'), columns);
-      });
+      if (exportBtn) {
+        const newBtn = exportBtn.cloneNode(true);
+        exportBtn.replaceWith(newBtn);
+        newBtn.addEventListener('click', () => {
+          const element = detailsModal.querySelector('.bg-white');
+          exportElementToPDF(element, `patient_${patient.firstName}_${patient.lastName}`);
+        });
+      }
       const overlay = document.getElementById("global-overlay");
       overlay?.classList.remove("hidden");
     }

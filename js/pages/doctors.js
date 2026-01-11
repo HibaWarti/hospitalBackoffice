@@ -7,6 +7,7 @@
   function t(key) { return App.Services.I18n.t(key); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+  function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
 
   let doctorsState = {
     search: "",
@@ -31,6 +32,12 @@
     container.innerHTML = generateHTML();
     lucide.createIcons();
     attachListeners(container);
+    
+    // Set filter values
+    const specialtyFilter = container.querySelector('#specialty-filter');
+    if (specialtyFilter) {
+        specialtyFilter.value = doctorsState.filterSpecialty;
+    }
     
     // Restore focus if searching
     if (doctorsState.search) {
@@ -78,7 +85,10 @@
     const paginatedDoctors = filteredDoctors.slice(startIndex, startIndex + doctorsState.pageSize);
 
     const renderSortIcon = (key) => {
-      return '<i data-lucide="arrow-up-down" class="w-4 h-4 ml-1"></i>';
+      if (doctorsState.sortKey !== key) return '<i data-lucide="arrow-up-down" class="w-4 h-4 ms-1 opacity-50"></i>';
+      return doctorsState.sortOrder === 'asc' 
+        ? '<i data-lucide="arrow-up" class="w-4 h-4 ms-1"></i>'
+        : '<i data-lucide="arrow-down" class="w-4 h-4 ms-1"></i>';
     };
     
     const prevIcon = isRTL ? 'chevron-right' : 'chevron-left';
@@ -112,8 +122,8 @@
 
     // Modal HTML (Add/Edit)
     const modalHTML = doctorsState.isModalOpen ? `
-      <div class="fixed inset-0 z-[1001] flex items-center justify-center p-4" id="doctor-modal-overlay">
-        <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in max-h-[90vh] overflow-y-auto">
+      <div class="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay" id="doctor-modal-overlay">
+        <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 class="text-lg font-semibold">${doctorsState.editingId ? t("editDoctor") : t("addDoctor")}</h2>
             <button id="close-modal-x" class="text-muted-foreground hover:text-foreground">
@@ -166,8 +176,8 @@
     // Details Modal HTML
     const viewDoctor = doctorsState.viewingId ? getDoctor(doctorsState.viewingId) : null;
     const detailsModalHTML = (doctorsState.viewingId && viewDoctor) ? `
-      <div class="fixed inset-0 z-[1001] flex items-center justify-center p-4" id="doctor-details-overlay">
-        <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in">
+      <div class="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay" id="doctor-details-overlay">
+        <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in" onclick="event.stopPropagation()">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 class="text-lg font-semibold">${t("doctorDetails")}</h2>
             <button id="close-details-x" class="text-muted-foreground hover:text-foreground">
@@ -220,17 +230,27 @@
         <h1 class="text-3xl font-heading font-bold">${t("doctors")}</h1>
         
         <div class="flex flex-col sm:flex-row gap-4 justify-between">
-          <div class="relative flex-1 max-w-sm">
-            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
-            <input 
-              type="text" 
-              id="search-input" 
-              placeholder="${t("search")}" 
-              value="${doctorsState.search}"
-              class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            />
+          <div class="flex flex-1 gap-2 max-w-lg">
+            <div class="relative flex-1">
+                <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                <input 
+                  type="text" 
+                  id="search-input" 
+                  placeholder="${t("search")}" 
+                  value="${doctorsState.search}"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                />
+            </div>
+            <select id="specialty-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <option value="">${t("specialty")}</option>
+              ${specialties.map(s => `<option value="${s}">${s}</option>`).join('')}
+            </select>
           </div>
-        <div class="flex gap-2">
+          <div class="flex gap-2">
+          <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-white hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
+            <i data-lucide="rotate-ccw" class="w-4 h-4 ${gapClass}"></i>
+            ${t("reset")}
+          </button>
             <div class="relative inline-block text-left">
               <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-white hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
                 <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
@@ -243,10 +263,6 @@
                 </div>
               </div>
             </div>
-            <select id="specialty-filter" class="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              <option value="">${t("all")}</option>
-              ${specialties.map(s => `<option value="${s}">${s}</option>`).join('')}
-            </select>
             <button id="add-doctor-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-9 px-4 py-2">
               <i data-lucide="plus" class="w-4 h-4 ${gapClass}"></i>
               ${t("add")}
@@ -255,10 +271,10 @@
         </div>
 
         <div class="rounded-lg border border-border bg-card overflow-visible">
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-              <thead class="bg-secondary/50 border-b border-border">
-                <tr class="text-left">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm" dir="${isRTL ? 'rtl' : 'ltr'}">
+            <thead class="bg-secondary/50 border-b border-border">
+                <tr class="${isRTL ? 'text-right' : 'text-left'}">
                   <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="firstName">
                     <div class="flex items-center">${t("firstName")} ${renderSortIcon('firstName')}</div>
                   </th>
@@ -271,23 +287,25 @@
                   <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="email">
                     <div class="flex items-center">${t("email")} ${renderSortIcon('email')}</div>
                   </th>
-                  <th class="h-12 px-4 font-medium text-muted-foreground">${t("phone")}</th>
-                  <th class="h-12 px-4 font-medium text-muted-foreground text-right">${t("actions")}</th>
+                  <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="phone">
+                    <div class="flex items-center">${t("phone")} ${renderSortIcon('phone')}</div>
+                  </th>
+                  <th class="h-12 px-4 font-medium text-muted-foreground text-right rtl:text-left">${t("actions")}</th>
                 </tr>
               </thead>
               <tbody id="doctors-table-body" class="divide-y divide-border">
                 ${paginatedDoctors.map(doctor => `
                   <tr class="hover:bg-muted transition-colors group">
-                    <td class="p-4 font-medium">${doctor.firstName}</td>
-                    <td class="p-4">${doctor.lastName}</td>
-                    <td class="p-4">
+                    <td class="p-4 font-medium ${isRTL ? 'text-right' : 'text-left'}">${doctor.firstName}</td>
+                    <td class="p-4 ${isRTL ? 'text-right' : 'text-left'}">${doctor.lastName}</td>
+                    <td class="p-4 ${isRTL ? 'text-right' : 'text-left'}">
                       <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
                         ${t(doctor.specialty.toLowerCase().replace(' ', '')) || doctor.specialty}
                       </span>
                     </td>
-                    <td class="p-4 text-muted-foreground">${doctor.email}</td>
-                    <td class="p-4 text-muted-foreground">${doctor.phone}</td>
-                    <td class="p-4 text-right">
+                    <td class="p-4 text-muted-foreground ${isRTL ? 'text-right' : 'text-left'}">${doctor.email}</td>
+                    <td class="p-4 text-muted-foreground ${isRTL ? 'text-right' : 'text-left'}">${doctor.phone}</td>
+                    <td class="p-4 ${isRTL ? 'text-left' : 'text-right'}">
                       <div class="relative inline-block text-left">
                         <button data-action="menu" data-id="${doctor.id}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8">
                           <i data-lucide="more-horizontal" class="w-4 h-4"></i>
@@ -337,9 +355,9 @@
              ` : ''}
            </div>
         </div>
-        ${modalHTML}
-        ${detailsModalHTML}
       </div>
+      ${modalHTML}
+      ${detailsModalHTML}
     `;
   }
 
@@ -389,6 +407,18 @@
             doctorsState.page = 1;
             renderPage();
         });
+    }
+
+    const resetBtn = container.querySelector("#reset-filters-btn");
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        doctorsState.search = "";
+        doctorsState.filterSpecialty = "";
+        doctorsState.sortKey = null;
+        doctorsState.sortOrder = "asc";
+        doctorsState.page = 1;
+        updateContent(container);
+      });
     }
 
     // Sort
@@ -485,7 +515,14 @@
 
         container.querySelector('#export-pdf')?.addEventListener('click', () => {
             const doctors = getDoctors();
-            exportToPDF(doctors, 'doctors-export', 'Doctors List', ['firstName', 'lastName', 'email', 'phone', 'specialty']);
+            const columns = [
+                { key: 'firstName', header: t('firstName') },
+                { key: 'lastName', header: t('lastName') },
+                { key: 'email', header: t('email') },
+                { key: 'phone', header: t('phone') },
+                { key: 'specialty', header: t('specialty') }
+            ];
+            exportToPDF(doctors, 'doctors-export', 'Doctors List', columns);
             exportMenu.classList.add('hidden');
         });
     }
@@ -575,18 +612,14 @@
     // Export Details PDF
     const exportDetailBtn = container.querySelector('#export-detail-pdf-btn');
     if (exportDetailBtn && doctorsState.viewingId) {
-        exportDetailBtn.addEventListener('click', () => {
+        const newBtn = exportDetailBtn.cloneNode(true);
+        exportDetailBtn.replaceWith(newBtn);
+        newBtn.addEventListener('click', () => {
              const doctor = getDoctor(doctorsState.viewingId);
              if (doctor) {
-                 const columns = [
-                     { key: 'firstName', header: t('firstName') },
-                     { key: 'lastName', header: t('lastName') },
-                     { key: 'email', header: t('email') },
-                     { key: 'phone', header: t('phone') },
-                     { key: 'specialty', header: t('specialty') }
-                 ];
+                 const modalContent = container.querySelector('#view-doctor-modal > div'); // Targeting the card inside modal
                  const baseName = `${String(doctor.firstName || '').trim()}_${String(doctor.lastName || '').trim()}`.replace(/\s+/g, '_').replace(/[^\w\-]/g, '') || 'doctor';
-                 exportToPDF([doctor], baseName, t('doctorDetails'), columns);
+                 exportElementToPDF(modalContent, baseName);
              }
         });
     }

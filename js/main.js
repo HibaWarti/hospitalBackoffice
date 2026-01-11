@@ -163,15 +163,15 @@ function renderShell(user) {
           <div class="relative">
             <button id="lang-button" class="flex items-center gap-2 border border-border rounded-md px-3 py-2 bg-white hover:bg-accent hover:text-accent-foreground transition-colors">
               <i data-lucide="globe" class="w-4 h-4"></i>
-              <span id="lang-label" class="hidden sm:inline">🇬🇧 English</span>
-              <span id="lang-flag" class="sm:hidden">🇬🇧</span>
+              <span id="lang-label" class="hidden sm:flex items-center gap-2"></span>
+              <span id="lang-flag" class="sm:hidden flex items-center"></span>
             </button>
-            <div id="lang-menu" class="hidden absolute right-0 mt-2 w-32 rounded-lg border border-border bg-white shadow-md z-50">
+            <div id="lang-menu" class="hidden absolute right-0 mt-2 w-40 rounded-lg border border-border bg-white shadow-md z-50">
               ${languages
                 .map(
                   (lang) => `
-                    <button data-lang="${lang.code}" data-dir="${lang.dir}" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-2 transition-colors ${currentLang === lang.code ? 'bg-accent/10' : ''}">
-                      <span>${lang.flag}</span>
+                    <button data-lang="${lang.code}" data-dir="${lang.dir}" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-3 transition-colors ${currentLang === lang.code ? 'bg-accent/10' : ''}">
+                      <img src="${lang.flag}" class="w-5 h-auto rounded-sm shadow-sm" alt="${lang.label}">
                       <span>${lang.label}</span>
                     </button>
                   `,
@@ -194,8 +194,8 @@ function renderShell(user) {
 
   // Initial Language Label
   const currentLangObj = App.Services.I18n.languages.find(l => l.code === currentLang) || App.Services.I18n.languages[0];
-  document.getElementById("lang-label").textContent = `${currentLangObj.flag} ${currentLangObj.label}`;
-  document.getElementById("lang-flag").textContent = currentLangObj.flag;
+  document.getElementById("lang-label").innerHTML = `<img src="${currentLangObj.flag}" class="w-5 h-auto rounded-sm shadow-sm" alt="${currentLangObj.label}"> ${currentLangObj.label}`;
+  document.getElementById("lang-flag").innerHTML = `<img src="${currentLangObj.flag}" class="w-5 h-auto rounded-sm shadow-sm" alt="${currentLangObj.label}">`;
 
   const menuList = document.getElementById("sidebar-menu-list");
   const mainContent = document.getElementById("main-content");

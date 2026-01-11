@@ -7,6 +7,7 @@
   function t(key) { return App.Services.I18n.t(key); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+  function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
 
   let servicesState = {
     search: "",
@@ -77,7 +78,10 @@
     const paginatedServices = filteredServices.slice(startIndex, startIndex + servicesState.pageSize);
 
     const renderSortIcon = (key) => {
-      return '<i data-lucide="arrow-up-down" class="w-4 h-4 ml-1"></i>';
+      if (servicesState.sortKey !== key) return `<i data-lucide="arrow-up-down" class="w-3 h-3 ml-1 text-muted-foreground/50"></i>`;
+      return servicesState.sortOrder === 'asc' 
+        ? `<i data-lucide="arrow-up" class="w-3 h-3 ml-1 text-foreground"></i>`
+        : `<i data-lucide="arrow-down" class="w-3 h-3 ml-1 text-foreground"></i>`;
     };
     
     let pagesToShow = [];
@@ -132,7 +136,7 @@
 
     // Add/Edit Modal HTML
     const modalHTML = `
-      <div id="service-modal" class="fixed inset-0 z-[1001] ${servicesState.isModalOpen ? 'flex' : 'hidden'} items-center justify-center p-4">
+      <div id="service-modal" class="fixed inset-0 z-[1001] ${servicesState.isModalOpen ? 'flex' : 'hidden'} items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay">
         <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 id="service-modal-title" class="text-lg font-semibold">${servicesState.editingId ? t("editService") : t("addService")}</h2>
@@ -167,17 +171,23 @@
         <h1 class="text-3xl font-heading font-bold">${t("services")}</h1>
         
         <div class="flex flex-col sm:flex-row gap-4 justify-between">
-          <div class="relative flex-1 max-w-sm">
-            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
-            <input 
-              type="text" 
-              id="search-input" 
-              placeholder="${t("search")}" 
-              value="${servicesState.search}"
-              class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            />
+          <div class="flex flex-1 gap-2 max-w-lg">
+            <div class="relative flex-1">
+                <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                <input 
+                  type="text" 
+                  id="search-input" 
+                  placeholder="${t("search")}" 
+                  value="${servicesState.search}"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                />
+            </div>
           </div>
         <div class="flex gap-2">
+            <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-white hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 ${gapClass}"></i>
+                ${t("reset")}
+            </button>
             <div class="relative inline-block text-left">
               <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-white hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
                 <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
@@ -190,10 +200,6 @@
                 </div>
               </div>
             </div>
-            <select id="name-filter" class="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              <option value="">${t("all")}</option>
-              ${initials.map(ch => `<option value="${ch}">${ch}</option>`).join('')}
-            </select>
             <button id="add-service-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-9 px-4 py-2">
               <i data-lucide="plus" class="w-4 h-4 ${gapClass}"></i>
               ${t("add")}
@@ -205,23 +211,23 @@
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="bg-secondary/50 border-b border-border">
-                <tr class="text-left">
+                <tr class="${isRTL ? 'text-right' : 'text-left'}">
                   <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="name">
                     <div class="flex items-center">${t("name")} ${renderSortIcon('name')}</div>
                   </th>
                   <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="description">
                     <div class="flex items-center">${t("description")} ${renderSortIcon('description')}</div>
                   </th>
-                  <th class="h-12 px-4 font-medium text-muted-foreground text-right">${t("actions")}</th>
+                  <th class="h-12 px-4 font-medium text-muted-foreground text-right rtl:text-left">${t("actions")}</th>
                 </tr>
               </thead>
               <tbody id="services-table-body" class="divide-y divide-border">
                 ${paginatedServices.map(service => `
                   <tr class="hover:bg-muted transition-colors group">
-                    <td class="p-4 font-medium">${service.name}</td>
-                    <td class="p-4 text-muted-foreground max-w-xs truncate" title="${service.description || ''}">${service.description || '-'}</td>
-                    <td class="p-4 text-right">
-                      <div class="relative inline-block text-left">
+                    <td class="p-4 font-medium text-left rtl:text-right">${service.name}</td>
+                    <td class="p-4 text-muted-foreground max-w-xs truncate text-left rtl:text-right" title="${service.description || ''}">${service.description || '-'}</td>
+                    <td class="p-4 text-right rtl:text-left">
+                      <div class="relative inline-block text-left rtl:text-right">
                         <button data-action="menu" data-id="${service.id}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8">
                           <i data-lucide="more-horizontal" class="w-4 h-4"></i>
                         </button>
@@ -268,9 +274,9 @@
              ` : ''}
           </div>
         </div>
-        ${modalHTML}
-        ${viewModalHTML}
       </div>
+      ${modalHTML}
+      ${viewModalHTML}
     `;
   }
 
@@ -316,6 +322,18 @@
     if (nameFilter) {
         nameFilter.addEventListener('change', (e) => {
             servicesState.filterInitial = e.target.value;
+            servicesState.page = 1;
+            renderPage();
+        });
+    }
+
+    const resetBtn = container.querySelector('#reset-filters-btn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            servicesState.search = "";
+            servicesState.filterInitial = "";
+            servicesState.sortKey = null;
+            servicesState.sortOrder = "asc";
             servicesState.page = 1;
             renderPage();
         });
@@ -399,15 +417,46 @@
         };
         document.addEventListener("click", closeMenusHandler);
 
+        const getExportServices = () => {
+            let services = getServices().filter(service => {
+                const searchLower = servicesState.search.toLowerCase();
+                const matchesSearch = (
+                    service.name.toLowerCase().includes(searchLower) ||
+                    (service.description && service.description.toLowerCase().includes(searchLower))
+                );
+                const first = (service.name || '').trim().charAt(0).toUpperCase();
+                const matchesInitial = servicesState.filterInitial ? first === servicesState.filterInitial : true;
+                return matchesSearch && matchesInitial;
+            });
+
+            if (servicesState.sortKey) {
+                services.sort((a, b) => {
+                    const aVal = String(a[servicesState.sortKey]).toLowerCase();
+                    const bVal = String(b[servicesState.sortKey]).toLowerCase();
+                    if (servicesState.sortOrder === 'asc') return aVal.localeCompare(bVal);
+                    return bVal.localeCompare(aVal);
+                });
+            }
+            return services;
+        };
+
         container.querySelector('#export-csv')?.addEventListener('click', () => {
-            const services = getServices();
-            exportToCSV(services, 'services-export', ['name', 'description']);
+            const services = getExportServices();
+            const columns = [
+                { key: 'name', header: t('name') },
+                { key: 'description', header: t('description') }
+            ];
+            exportToCSV(services, 'services-export', columns);
             exportMenu.classList.add('hidden');
         });
 
         container.querySelector('#export-pdf')?.addEventListener('click', () => {
-            const services = getServices();
-            exportToPDF(services, 'services-export', 'Services List', ['name', 'description']);
+            const services = getExportServices();
+            const columns = [
+                { key: 'name', header: t('name') },
+                { key: 'description', header: t('description') }
+            ];
+            exportToPDF(services, 'services-export', t('services'), columns);
             exportMenu.classList.add('hidden');
         });
     }
@@ -558,7 +607,7 @@
                         </div>
                     `;
                     container.querySelector("#export-detail-pdf-btn")?.addEventListener("click", () => {
-                        exportToPDF([service], `service_${service.name}`, t('serviceDetails'), ['name', 'description']);
+                        exportDetailsToPDF(service, `service_${service.name}`, t('serviceDetails'), [{key: 'name', header: t('name')}, {key: 'description', header: t('description')}]);
                     });
                 }
             }

@@ -13,6 +13,7 @@
   
   function t(key) { return App.Services.I18n.t(key); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+  function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
 
   let appointmentsState = {
@@ -40,6 +41,12 @@
     lucide.createIcons();
     attachListeners(container);
     
+    // Set filter values
+    const statusFilter = container.querySelector('#status-filter');
+    if (statusFilter) {
+        statusFilter.value = appointmentsState.filterStatus;
+    }
+
     if (appointmentsState.search) {
         const searchInput = container.querySelector("#search-input");
         if (searchInput) {
@@ -101,7 +108,7 @@
     const paginatedAppointments = filteredAppointments.slice(startIndex, startIndex + appointmentsState.pageSize);
 
     const renderSortIcon = (key) => {
-      return '<i data-lucide="arrow-up-down" class="w-4 h-4 ml-1"></i>';
+      return '<i data-lucide="arrow-up-down" class="w-4 h-4 ms-1"></i>';
     };
     
     let pagesToShow = [];
@@ -132,7 +139,7 @@
 
     // Modal Overlays
     const modalOverlayHTML = (appointmentsState.isModalOpen || appointmentsState.viewingId) ? `
-      <div class="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" id="global-overlay">
+      <div class="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay" id="global-overlay">
         ${appointmentsState.viewingId ? (() => {
             const app = enrichedAppointments.find(a => a.id === appointmentsState.viewingId);
             if (!app) return '';
@@ -259,19 +266,31 @@
         <h1 class="text-3xl font-heading font-bold">${t("appointments")}</h1>
         
         <div class="flex flex-col sm:flex-row gap-4 justify-between">
-          <div class="relative flex-1 max-w-sm">
-            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
-            <input 
-              type="text" 
-              id="search-input" 
-              placeholder="${t("search")}" 
-              value="${appointmentsState.search}"
-              class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            />
+          <div class="flex flex-1 gap-2">
+            <div class="relative flex-1">
+              <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+              <input 
+                type="text" 
+                id="search-input" 
+                placeholder="${t("search")}" 
+                value="${appointmentsState.search}"
+                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+            <select id="status-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              <option value="">${t("status")}</option>
+              <option value="scheduled">${t("scheduled")}</option>
+              <option value="completed">${t("completed")}</option>
+              <option value="cancelled">${t("cancelled")}</option>
+            </select>
           </div>
-        <div class="flex gap-2">
+          <div class="flex gap-2">
+            <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-white hover:bg-accent hover:text-accent-foreground h-10 px-3">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 ${gapClass}"></i>
+                ${t("reset")}
+            </button>
             <div class="relative inline-block text-left">
-              <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-white hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
+              <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-white hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
                 <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
                 ${t("export")}
               </button>
@@ -282,17 +301,7 @@
                 </div>
               </div>
             </div>
-            <select id="doctor-filter" class="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              <option value="">${t("all")}</option>
-              ${doctors.map(d => `<option value="${d.id}">${d.firstName} ${d.lastName}</option>`).join('')}
-            </select>
-            <select id="status-filter" class="h-9 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              <option value="">${t("all")}</option>
-              <option value="scheduled">${t("scheduled")}</option>
-              <option value="completed">${t("completed")}</option>
-              <option value="cancelled">${t("cancelled")}</option>
-            </select>
-            <button id="add-appointment-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-9 px-4 py-2">
+            <button id="add-appointment-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-10 px-4 py-2">
               <i data-lucide="plus" class="w-4 h-4 ${gapClass}"></i>
               ${t("add")}
             </button>
@@ -301,9 +310,9 @@
 
         <div class="rounded-lg border border-border bg-card overflow-visible shadow-sm">
           <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm" dir="${isRTL ? 'rtl' : 'ltr'}">
               <thead class="bg-secondary/50 border-b border-border">
-                <tr class="text-left">
+                <tr class="${isRTL ? 'text-right' : 'text-left'}">
                   <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="date">
                     <div class="flex items-center">${t("date")} ${renderSortIcon('date')}</div>
                   </th>
@@ -319,25 +328,25 @@
                   <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="status">
                     <div class="flex items-center">${t("status")} ${renderSortIcon('status')}</div>
                   </th>
-                  <th class="h-12 px-4 font-medium text-muted-foreground text-right">${t("actions")}</th>
+                  <th class="h-12 px-4 font-medium text-muted-foreground text-right rtl:text-left">${t("actions")}</th>
                 </tr>
               </thead>
               <tbody id="appointments-table-body" class="divide-y divide-border">
                 ${paginatedAppointments.map(app => `
                   <tr class="hover:bg-muted transition-colors group">
-                    <td class="p-4 font-medium">${app.date}</td>
-                    <td class="p-4">${app.time}</td>
-                    <td class="p-4">${app.patientName}</td>
-                    <td class="p-4">${app.doctorName}</td>
-                    <td class="p-4">
+                    <td class="p-4 font-medium text-left rtl:text-right">${app.date}</td>
+                    <td class="p-4 text-left rtl:text-right">${app.time}</td>
+                    <td class="p-4 text-left rtl:text-right">${app.patientName}</td>
+                    <td class="p-4 text-left rtl:text-right">${app.doctorName}</td>
+                    <td class="p-4 text-left rtl:text-right">
                       <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors border-transparent 
                         ${app.status === 'completed' ? 'bg-success text-success-foreground' : 
                           app.status === 'cancelled' ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-secondary-foreground'}">
                         ${t(app.status)}
                       </span>
                     </td>
-                    <td class="p-4 text-right">
-                      <div class="relative inline-block text-left">
+                    <td class="p-4 text-right rtl:text-left">
+                      <div class="relative inline-block text-left rtl:text-right">
                         <button data-action="menu" data-id="${app.id}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8">
                             <i data-lucide="more-horizontal" class="w-4 h-4"></i>
                         </button>
@@ -384,8 +393,8 @@
            </div>
            ` : ''}
         </div>
-        ${modalOverlayHTML}
       </div>
+      ${modalOverlayHTML}
     `;
   }
 
@@ -486,7 +495,20 @@
     });
 
     container.querySelector("#export-pdf")?.addEventListener("click", () => {
-        exportToPDF(getAppointments(), 'appointments.pdf', 'Appointments List', ['date', 'time', 'status']);
+        const columns = [
+            { key: 'date', header: t('date') },
+            { key: 'time', header: t('time') },
+            { key: 'patientName', header: t('patient') },
+            { key: 'doctorName', header: t('doctor') },
+            { key: 'status', header: t('status') }
+        ];
+        // Enrich appointments with names for export
+        const enrichedAppointments = getAppointments().map(app => ({
+            ...app,
+            patientName: getPatient(app.patientId)?.firstName + ' ' + getPatient(app.patientId)?.lastName,
+            doctorName: getDoctor(app.doctorId)?.firstName + ' ' + getDoctor(app.doctorId)?.lastName
+        }));
+        exportToPDF(enrichedAppointments, 'appointments.pdf', 'Appointments List', columns);
         container.querySelector("#export-menu").classList.add("hidden");
     });
 
@@ -494,12 +516,8 @@
         if (appointmentsState.viewingId) {
             const app = getAppointment(appointmentsState.viewingId);
             if (app) {
-                const enriched = {
-                   ...app,
-                   patientName: getPatient(app.patientId)?.firstName + ' ' + getPatient(app.patientId)?.lastName,
-                   doctorName: getDoctor(app.doctorId)?.firstName + ' ' + getDoctor(app.doctorId)?.lastName
-                };
-                exportToPDF([enriched], `appointment-${app.id}.pdf`, 'Appointment Details', ['date', 'time', 'patientName', 'doctorName', 'status']);
+                const element = container.querySelector("#details-modal-content");
+                exportElementToPDF(element, `appointment-${app.id}`);
             }
         }
     });
@@ -532,6 +550,19 @@
         });
     }
 
+    const resetBtn = container.querySelector("#reset-filters-btn");
+    if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+            appointmentsState.search = "";
+            appointmentsState.filterDoctorId = "";
+            appointmentsState.filterStatus = "";
+            appointmentsState.sortKey = null;
+            appointmentsState.sortOrder = "asc";
+            appointmentsState.page = 1;
+            updateContent(container);
+        });
+    }
+
     // Pagination
     container.querySelectorAll("[data-page]").forEach(btn => {
         btn.addEventListener("click", (e) => {
@@ -553,6 +584,20 @@
             appointmentsState.page++;
             updateContent(container);
         }
+    });
+
+    // Sort headers
+    container.querySelectorAll("th[data-sort]").forEach(th => {
+        th.addEventListener("click", () => {
+            const key = th.dataset.sort;
+            if (appointmentsState.sortKey === key) {
+                appointmentsState.sortOrder = appointmentsState.sortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                appointmentsState.sortKey = key;
+                appointmentsState.sortOrder = 'asc';
+            }
+            updateContent(container);
+        });
     });
 
     // Table Actions
