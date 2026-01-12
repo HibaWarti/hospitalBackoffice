@@ -121,7 +121,7 @@
         return `<span class="px-2 text-muted-foreground">...</span>`;
       }
       const isActive = prescriptionsState.page === p;
-      const bgClass = isActive ? 'bg-primary text-primary-foreground' : 'bg-white';
+      const bgClass = isActive ? 'bg-primary text-primary-foreground' : 'bg-background text-foreground';
       const hoverClass = isActive ? 'hover:bg-primary/90' : 'hover:bg-accent hover:text-accent-foreground';
       return `
         <button data-page="${p}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input ${bgClass} ${hoverClass} h-8 min-w-8 px-2">
@@ -176,7 +176,7 @@
                 </div>
 
                 <div class="flex gap-2">
-                    <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-white hover:bg-accent hover:text-accent-foreground h-10 px-3">
+                    <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-10 px-3">
                         <i data-lucide="rotate-ccw" class="w-4 h-4 ${gapClass}"></i>
                         ${t("reset")}
                     </button>
@@ -185,7 +185,7 @@
                             <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
                             ${t("export")}
                         </button>
-                        <div id="export-menu" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white border border-border ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                        <div id="export-menu" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card text-foreground border border-border ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                             <div class="py-1">
                                 <button id="export-csv" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors">
                                     ${t("exportCSV")}
@@ -246,7 +246,7 @@
                         <button data-action="menu" data-id="${p.id}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8">
                           <i data-lucide="more-horizontal" class="w-4 h-4"></i>
                         </button>
-                        <div id="prescription-menu-${p.id}" class="hidden fixed w-48 rounded-md shadow-lg bg-white border border-border ring-1 ring-black ring-opacity-5 focus-visible:outline-none z-50">
+                        <div id="prescription-menu-${p.id}" class="hidden fixed w-48 rounded-md shadow-lg bg-card text-foreground border border-border ring-1 ring-black ring-opacity-5 focus-visible:outline-none z-50">
                           <div class="py-1">
                             <button data-action="view" data-id="${p.id}" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors flex items-center">
                               <i data-lucide="eye" class="w-4 h-4 ${gapClass}"></i>${t('view')}

@@ -104,6 +104,8 @@ function renderLogin() {
 
 function renderShell(user) {
   const currentLang = App.Services.I18n.getCurrentLang();
+  const isDark = document.documentElement.classList.contains('dark');
+  const themeIcon = isDark ? 'sun' : 'moon';
   
   const shell = `
     <div class="flex min-h-screen w-full max-w-full bg-background text-foreground">
@@ -160,23 +162,29 @@ function renderShell(user) {
             </button>
           </div>
 
-          <div class="relative">
-            <button id="lang-button" class="flex items-center gap-2 border border-border rounded-md px-3 py-2 bg-white hover:bg-accent hover:text-accent-foreground transition-colors">
-              <i data-lucide="globe" class="w-4 h-4"></i>
-              <span id="lang-label" class="hidden sm:flex items-center gap-2"></span>
-              <span id="lang-flag" class="sm:hidden flex items-center"></span>
+          <div class="flex items-center gap-2">
+            <button id="theme-toggle" class="h-10 w-10 inline-flex items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors" type="button">
+              <i data-lucide="${themeIcon}" class="w-4 h-4"></i>
             </button>
-            <div id="lang-menu" class="hidden absolute right-0 mt-2 w-40 rounded-lg border border-border bg-white shadow-md z-50">
-              ${languages
-                .map(
-                  (lang) => `
-                    <button data-lang="${lang.code}" data-dir="${lang.dir}" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-3 transition-colors ${currentLang === lang.code ? 'bg-accent/10' : ''}">
-                      <img src="${lang.flag}" class="w-5 h-auto rounded-sm shadow-sm" alt="${lang.label}">
-                      <span>${lang.label}</span>
-                    </button>
-                  `,
-                )
-                .join("")}
+
+            <div class="relative">
+              <button id="lang-button" class="flex items-center gap-2 border border-border rounded-md px-3 py-2 bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors">
+                <i data-lucide="globe" class="w-4 h-4"></i>
+                <span id="lang-label" class="hidden sm:flex items-center gap-2"></span>
+                <span id="lang-flag" class="sm:hidden flex items-center"></span>
+              </button>
+              <div id="lang-menu" class="hidden absolute right-0 mt-2 w-40 rounded-lg border border-border bg-card text-foreground shadow-md z-50">
+                ${languages
+                  .map(
+                    (lang) => `
+                      <button data-lang="${lang.code}" data-dir="${lang.dir}" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-3 transition-colors ${currentLang === lang.code ? 'bg-accent/10' : ''}">
+                        <img src="${lang.flag}" class="w-5 h-auto rounded-sm shadow-sm" alt="${lang.label}">
+                        <span>${lang.label}</span>
+                      </button>
+                    `,
+                  )
+                  .join("")}
+              </div>
             </div>
           </div>
         </header>
@@ -203,7 +211,16 @@ function renderShell(user) {
   const sidebarToggle = document.getElementById("sidebar-toggle");
   const langButton = document.getElementById("lang-button");
   const langMenu = document.getElementById("lang-menu");
+  const themeToggle = document.getElementById("theme-toggle");
   const header = document.querySelector("header");
+
+  function updateThemeIcon() {
+    if (!themeToggle) return;
+    const isDark = document.documentElement.classList.contains('dark');
+    const icon = isDark ? 'sun' : 'moon';
+    themeToggle.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+    lucide.createIcons();
+  }
 
   function updateHeaderLayout() {
     const isMobile = window.innerWidth < 768;
@@ -270,6 +287,11 @@ function renderShell(user) {
   // Language Switcher
   langButton.addEventListener("click", () => {
     langMenu.classList.toggle("hidden");
+  });
+
+  themeToggle?.addEventListener('click', () => {
+    App.Services.Theme.toggleTheme();
+    updateThemeIcon();
   });
 
   langMenu.addEventListener("click", (e) => {
