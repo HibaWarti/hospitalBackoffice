@@ -7,8 +7,10 @@
   function t(key) { return App.Services.I18n.t(key); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
-  function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
   function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
+  function toastSuccess(message) { return App.Services.Utils.toastSuccess(message); }
+  function toastError(message) { return App.Services.Utils.toastError(message); }
+  function confirmDialog(options) { return App.Services.Utils.confirmDialog(options); }
 
   let servicesState = {
     search: "",
@@ -525,8 +527,10 @@
             
             if (servicesState.editingId) {
                 updateService(servicesState.editingId, data);
+                toastSuccess(t('updatedSuccessfully'));
             } else {
                 addService(data);
+                toastSuccess(t('createdSuccessfully'));
             }
             closeModals();
         });
@@ -578,10 +582,20 @@
         if (menu) menu.classList.add("hidden");
 
         if (action === "delete") {
-            if (confirm(t("confirmDelete"))) {
-                deleteService(id);
+            confirmDialog({
+                title: t('confirm'),
+                text: t('confirmDeleteService') || t('confirmDelete'),
+                icon: 'warning',
+            }).then((ok) => {
+                if (!ok) return;
+                const deleted = deleteService(id);
+                if (!deleted) {
+                    toastError(t('deleteFailed'));
+                    return;
+                }
                 renderPage();
-            }
+                toastSuccess(t('deletedSuccessfully'));
+            });
         } else if (action === "edit") {
             openModal(id);
         } else if (action === "view") {

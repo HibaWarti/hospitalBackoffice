@@ -9,6 +9,9 @@
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
   function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
   function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
+  function toastSuccess(message) { return App.Services.Utils.toastSuccess(message); }
+  function toastError(message) { return App.Services.Utils.toastError(message); }
+  function confirmDialog(options) { return App.Services.Utils.confirmDialog(options); }
 
   let doctorsState = {
     search: "",
@@ -618,8 +621,10 @@
             
             if (doctorsState.editingId) {
                 updateDoctor(doctorsState.editingId, data);
+                toastSuccess(t('updatedSuccessfully'));
             } else {
                 addDoctor(data);
+                toastSuccess(t('createdSuccessfully'));
             }
             closeModal();
         });
@@ -693,10 +698,20 @@
             activeMenuAnchor = null;
             
             if (action === "delete") {
-                if (confirm(t("confirmDelete"))) {
-                    deleteDoctor(id);
+                confirmDialog({
+                    title: t('confirm'),
+                    text: t('confirmDeleteDoctor') || t('confirmDelete'),
+                    icon: 'warning',
+                }).then((ok) => {
+                    if (!ok) return;
+                    const deleted = deleteDoctor(id);
+                    if (!deleted) {
+                        toastError(t('deleteFailed'));
+                        return;
+                    }
                     renderPage();
-                }
+                    toastSuccess(t('deletedSuccessfully'));
+                });
             } else if (action === "edit") {
                 openModal(id);
             } else if (action === "view") {

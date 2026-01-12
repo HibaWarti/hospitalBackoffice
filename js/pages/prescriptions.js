@@ -15,6 +15,10 @@
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
   function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
+  function toastSuccess(message) { return App.Services.Utils.toastSuccess(message); }
+  function toastWarning(message) { return App.Services.Utils.toastWarning(message); }
+  function toastError(message) { return App.Services.Utils.toastError(message); }
+  function confirmDialog(options) { return App.Services.Utils.confirmDialog(options); }
 
   // State
   const prescriptionsState = {
@@ -596,8 +600,9 @@
             addPrescription({ medications, dosage, patientId, doctorId, date });
             closeModals();
             updateContent(container);
+            toastSuccess(t('createdSuccessfully'));
         } else {
-            alert(t('fillAllFields') || "Please fill all fields");
+            toastWarning(t('fillAllFields'));
         }
     });
 
@@ -614,6 +619,7 @@
             updatePrescription(parseInt(id), { medications, dosage, patientId, doctorId, date });
             closeModals();
             updateContent(container);
+            toastSuccess(t('updatedSuccessfully'));
         }
     });
 
@@ -724,11 +730,22 @@
             }
             closeMenusHandler();
         } else if (action === 'delete') {
-            if (confirm(t('confirmDelete'))) {
-                deletePrescription(id);
+            confirmDialog({
+                title: t('confirm'),
+                text: t('confirmDeletePrescription') || t('confirmDelete'),
+                icon: 'warning',
+            }).then((ok) => {
+                if (!ok) return;
+                const deleted = deletePrescription(id);
+                if (!deleted) {
+                    toastError(t('deleteFailed'));
+                    return;
+                }
                 updateContent(container);
-            }
-            closeMenusHandler();
+                toastSuccess(t('deletedSuccessfully'));
+            }).finally(() => {
+                closeMenusHandler();
+            });
         }
     });
   }

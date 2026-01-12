@@ -5,6 +5,66 @@ function t(key) {
   return key;
 }
 
+function isSwalAvailable() {
+  return typeof window.Swal === 'function' && typeof window.Swal.fire === 'function';
+}
+
+function toast(type, message) {
+  if (!isSwalAvailable()) {
+    // Fallback (non-blocking)
+    console.log(`[${type}] ${message}`);
+    return;
+  }
+
+  const Toast = window.Swal.mixin({
+    toast: true,
+    position: document.documentElement.dir === 'rtl' ? 'top-start' : 'top-end',
+    showConfirmButton: false,
+    timer: 2500,
+    timerProgressBar: true,
+  });
+
+  Toast.fire({
+    icon: type,
+    title: message,
+  });
+}
+
+function toastSuccess(message) {
+  toast('success', message);
+}
+
+function toastWarning(message) {
+  toast('warning', message);
+}
+
+function toastError(message) {
+  toast('error', message);
+}
+
+function confirmDialog(options) {
+  const opts = options || {};
+  const title = opts.title || t('confirm');
+  const text = opts.text || '';
+  const icon = opts.icon || 'warning';
+  const confirmButtonText = opts.confirmButtonText || t('confirm');
+  const cancelButtonText = opts.cancelButtonText || t('cancel');
+
+  if (!isSwalAvailable()) {
+    return Promise.resolve(window.confirm(text || title));
+  }
+
+  return window.Swal.fire({
+    title,
+    text,
+    icon,
+    showCancelButton: true,
+    confirmButtonText,
+    cancelButtonText,
+    reverseButtons: document.documentElement.dir === 'rtl',
+  }).then(r => !!r.isConfirmed);
+}
+
 function exportToCSV(data, filename, columns) {
   const pad = (n) => String(n).padStart(2, '0');
   const now = new Date();
@@ -259,5 +319,14 @@ function exportElementToPDF(element, filename, options) {
 
 window.App = window.App || {};
 App.Services = App.Services || {};
-App.Services.Utils = { exportToCSV, exportToPDF, exportDetailsToPDF, exportElementToPDF };
+App.Services.Utils = {
+  exportToCSV,
+  exportToPDF,
+  exportDetailsToPDF,
+  exportElementToPDF,
+  toastSuccess,
+  toastWarning,
+  toastError,
+  confirmDialog,
+};
 })();

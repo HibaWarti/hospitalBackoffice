@@ -8,10 +8,13 @@ function getServices() { return App.Services.Data.getServices(); }
 function t(key) { return App.Services.I18n.t(key); }
 function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
 function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
-  function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
-  function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
+function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
+function toastSuccess(message) { return App.Services.Utils.toastSuccess(message); }
+function toastError(message) { return App.Services.Utils.toastError(message); }
+function confirmDialog(options) { return App.Services.Utils.confirmDialog(options); }
+function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
 
-  let patientsState = {
+let patientsState = {
   search: "",
   sortKey: null,
   sortOrder: "asc",
@@ -557,8 +560,10 @@ function attachListeners(container) {
     
     if (data.id) {
       updatePatient(data.id, data);
+      toastSuccess(t('updatedSuccessfully'));
     } else {
       addPatient({ ...data, registrationDate: new Date().toISOString().split('T')[0] });
+      toastSuccess(t('createdSuccessfully'));
     }
     
     closeModals();
@@ -631,10 +636,20 @@ function attachListeners(container) {
     const patient = getPatient(id);
     
     if (action === "delete") {
-      if (confirm(t("confirmDelete"))) {
-        deletePatient(id);
+      confirmDialog({
+        title: t('confirm'),
+        text: t('confirmDelete'),
+        icon: 'warning',
+      }).then((ok) => {
+        if (!ok) return;
+        const deleted = deletePatient(id);
+        if (!deleted) {
+          toastError(t('deleteFailed'));
+          return;
+        }
         updateContent(container);
-      }
+        toastSuccess(t('deletedSuccessfully'));
+      });
     } else if (action === "edit") {
       form.reset();
       modalTitle.textContent = t("editPatient");

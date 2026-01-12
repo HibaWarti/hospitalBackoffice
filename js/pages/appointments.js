@@ -4,18 +4,19 @@
   function addAppointment(a) { return App.Services.Data.addAppointment(a); }
   function updateAppointment(id, updates) { return App.Services.Data.updateAppointment(id, updates); }
   function deleteAppointment(id) { return App.Services.Data.deleteAppointment(id); }
-  
   function getPatient(id) { return App.Services.Data.getPatient(id); }
   function getDoctor(id) { return App.Services.Data.getDoctor(id); }
+  function getService(id) { return App.Services.Data.getService(id); }
   function getPatients() { return App.Services.Data.getPatients(); }
   function getDoctors() { return App.Services.Data.getDoctors(); }
   function getServices() { return App.Services.Data.getServices(); }
-  
   function t(key) { return App.Services.I18n.t(key); }
-  function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
-  function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
-  function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
+  function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+  function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
+  function toastSuccess(message) { return App.Services.Utils.toastSuccess(message); }
+  function toastError(message) { return App.Services.Utils.toastError(message); }
+  function confirmDialog(options) { return App.Services.Utils.confirmDialog(options); }
 
   let appointmentsState = {
     search: "",
@@ -473,8 +474,10 @@
 
             if (appointmentsState.editingId) {
                 updateAppointment(appointmentsState.editingId, appointment);
+                toastSuccess(t('updatedSuccessfully'));
             } else {
                 addAppointment(appointment);
+                toastSuccess(t('createdSuccessfully'));
             }
             closeModals();
         });
@@ -680,10 +683,20 @@
             appointmentsState.isModalOpen = true;
             updateContent(container);
         } else if (action === "delete") {
-            if (confirm(t("deleteConfirm"))) {
-                deleteAppointment(id);
+            confirmDialog({
+                title: t('confirm'),
+                text: t('confirmDeleteAppointment') || t('confirmDelete'),
+                icon: 'warning',
+            }).then((ok) => {
+                if (!ok) return;
+                const deleted = deleteAppointment(id);
+                if (!deleted) {
+                    toastError(t('deleteFailed'));
+                    return;
+                }
                 updateContent(container);
-            }
+                toastSuccess(t('deletedSuccessfully'));
+            });
         }
     });
 
