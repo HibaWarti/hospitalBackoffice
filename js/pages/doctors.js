@@ -538,7 +538,7 @@
                 { key: 'phone', header: t('phone') },
                 { key: 'specialty', header: t('specialty') }
             ];
-            exportToPDF(doctors, 'doctors-export', 'Doctors List', columns);
+            exportToPDF(doctors, 'doctors-export', t('doctors'), columns);
             exportMenu.classList.add('hidden');
         });
     }

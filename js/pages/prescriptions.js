@@ -22,6 +22,7 @@
     itemsPerPage: 10,
     searchQuery: "",
     filterDoctorId: "",
+    filterDate: "",
     sortKey: "date",
     sortOrder: "desc",
     activeMenuId: null
@@ -65,7 +66,8 @@
         (patient ? patient.fullName.toLowerCase().includes(query) : false) ||
         (doctor ? doctor.name.toLowerCase().includes(query) : false);
       const matchesDoctor = prescriptionsState.filterDoctorId ? p.doctorId === prescriptionsState.filterDoctorId : true;
-      return matchesSearch && matchesDoctor;
+      const matchesDate = prescriptionsState.filterDate ? p.date === prescriptionsState.filterDate : true;
+      return matchesSearch && matchesDoctor && matchesDate;
     });
 
     // Sort
@@ -98,6 +100,32 @@
     const end = start + prescriptionsState.itemsPerPage;
     const paginated = filtered.slice(start, end);
 
+    let pagesToShow = [];
+    if (totalPages <= 7) {
+      pagesToShow = Array.from({ length: totalPages }, (_, i) => i + 1);
+    } else {
+      pagesToShow = [1];
+      if (prescriptionsState.page > 3) pagesToShow.push('ellipsis');
+      const start = Math.max(2, prescriptionsState.page - 1);
+      const end = Math.min(totalPages - 1, prescriptionsState.page + 1);
+      for (let p = start; p <= end; p++) pagesToShow.push(p);
+      if (prescriptionsState.page < totalPages - 2) pagesToShow.push('ellipsis');
+      pagesToShow.push(totalPages);
+    }
+    const pageButtons = pagesToShow.map(p => {
+      if (p === 'ellipsis') {
+        return `<span class="px-2 text-muted-foreground">...</span>`;
+      }
+      const isActive = prescriptionsState.page === p;
+      const bgClass = isActive ? 'bg-primary text-primary-foreground' : 'bg-white';
+      const hoverClass = isActive ? 'hover:bg-primary/90' : 'hover:bg-accent hover:text-accent-foreground';
+      return `
+        <button data-page="${p}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input ${bgClass} ${hoverClass} h-8 min-w-8 px-2">
+          ${p}
+        </button>
+      `;
+    }).join('');
+
     const paginationHTML = totalPages > 1 ? `
       <div class="space-y-2 pt-4 border-t border-border">
           <div class="text-sm text-muted-foreground text-center">
@@ -107,13 +135,7 @@
               <button data-page="prev" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8" ${prescriptionsState.page === 1 ? 'disabled' : ''}>
                   <i data-lucide="${isRTL ? 'chevron-right' : 'chevron-left'}" class="w-4 h-4"></i>
               </button>
-              <div class="flex items-center gap-1">
-                ${Array.from({length: totalPages}, (_, i) => i + 1).map(page => `
-                    <button data-page="${page}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors h-8 w-8 ${prescriptionsState.page === page ? 'bg-primary text-primary-foreground' : 'border border-input bg-background hover:bg-accent hover:text-accent-foreground'}">
-                        ${page}
-                    </button>
-                `).join('')}
-              </div>
+              ${pageButtons}
               <button data-page="next" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8" ${prescriptionsState.page === totalPages ? 'disabled' : ''}>
                   <i data-lucide="${isRTL ? 'chevron-left' : 'chevron-right'}" class="w-4 h-4"></i>
               </button>
@@ -140,6 +162,13 @@
                             class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                     </div>
+                    <input
+                        type="date"
+                        id="date-filter"
+                        value="${prescriptionsState.filterDate}"
+                        class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        placeholder="${t("date") || 'Date'}"
+                    >
                 </div>
 
                 <div class="flex gap-2">
@@ -176,17 +205,17 @@
             <table class="w-full text-sm" dir="${isRTL ? 'rtl' : 'ltr'}">
               <thead class="bg-muted/50 text-muted-foreground">
                 <tr class="${isRTL ? 'text-right' : 'text-left'}">
-                  <th class="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="medications">
-                    <div class="flex items-center">${t("medications")} ${renderSortIcon('medications')}</div>
-                  </th>
-                  <th class="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="dosage">
-                    <div class="flex items-center">${t("dosage")} ${renderSortIcon('dosage')}</div>
-                  </th>
                   <th class="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="patientName">
                     <div class="flex items-center">${t("patient")} ${renderSortIcon('patientName')}</div>
                   </th>
                   <th class="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="doctorName">
                     <div class="flex items-center">${t("doctor")} ${renderSortIcon('doctorName')}</div>
+                  </th>
+                  <th class="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="medications">
+                    <div class="flex items-center">${t("medications")} ${renderSortIcon('medications')}</div>
+                  </th>
+                  <th class="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="dosage">
+                    <div class="flex items-center">${t("dosage")} ${renderSortIcon('dosage')}</div>
                   </th>
                   <th class="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="date">
                     <div class="flex items-center">${t("date")} ${renderSortIcon('date')}</div>
@@ -203,10 +232,10 @@
                   const date = p.date || p.prescriptionDate || '-';
                   return `
                   <tr data-id="${p.id}" class="hover:bg-muted/50 transition-colors">
-                    <td class="p-4 align-middle font-medium text-foreground ${isRTL ? 'text-right' : 'text-left'}">${p.medications}</td>
-                    <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${p.dosage || '-'}</td>
                     <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${patientName}</td>
                     <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${doctorName}</td>
+                    <td class="p-4 align-middle font-medium text-foreground ${isRTL ? 'text-right' : 'text-left'}">${p.medications}</td>
+                    <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${p.dosage || '-'}</td>
                     <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${date}</td>
                     <td class="p-4 align-middle text-right rtl:text-left">
                       <div class="relative inline-block text-left rtl:text-right">
@@ -231,7 +260,7 @@
                   </tr>
                 `;}).join('') : `
                   <tr>
-                    <td colspan="5" class="p-8 text-center text-muted-foreground">
+                    <td colspan="6" class="p-8 text-center text-muted-foreground">
                       ${t("noPrescriptions")}
                     </td>
                   </tr>
@@ -429,8 +458,25 @@
             prescriptionsState.activeMenuId = null;
         }
     };
+    const repositionActiveMenu = () => {
+      if (!activeMenuAnchor || !activeMenuEl || activeMenuEl.classList.contains("hidden")) return;
+      const btnRect = activeMenuAnchor.getBoundingClientRect();
+      const isRTL = document.documentElement.dir === 'rtl';
+      const mw = activeMenuEl.offsetWidth || 192;
+      const mh = activeMenuEl.offsetHeight || 120;
+      let top = btnRect.bottom + 8;
+      if (top + mh > window.innerHeight) {
+        top = btnRect.top - mh - 8;
+      }
+      let left = isRTL ? btnRect.left : btnRect.right - mw;
+      if (left < 8) left = 8;
+      if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+      activeMenuEl.style.top = `${top}px`;
+      activeMenuEl.style.left = `${left}px`;
+    };
     window.addEventListener('scroll', closeMenusHandler, { capture: true, passive: true });
     window.addEventListener('resize', closeMenusHandler, { passive: true });
+    window.addEventListener('resize', repositionActiveMenu, { passive: true });
 
     // Search & Filter
     const searchInput = container.querySelector('#search-input');
@@ -447,11 +493,21 @@
       });
     }
 
+    const dateFilter = container.querySelector('#date-filter');
+    if (dateFilter) {
+      dateFilter.addEventListener('change', (e) => {
+        prescriptionsState.filterDate = e.target.value;
+        prescriptionsState.page = 1;
+        updateContent(container);
+      });
+    }
+
     const resetBtn = container.querySelector('#reset-filters-btn');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
             prescriptionsState.searchQuery = "";
             prescriptionsState.filterDoctorId = "";
+            prescriptionsState.filterDate = "";
             prescriptionsState.sortKey = null;
             prescriptionsState.sortOrder = "desc";
             prescriptionsState.page = 1;
@@ -502,34 +558,23 @@
     container.querySelector('#export-pdf')?.addEventListener('click', () => {
         const prescriptions = getPrescriptions();
         const columns = [
+            { key: 'date', header: t('date') },
+            { key: 'patientName', header: t('patient') },
+            { key: 'doctorName', header: t('doctor') },
             { key: 'medications', header: t('medications') },
-            { key: 'dosage', header: t('dosage') },
-            { key: 'date', header: t('date') }
+            { key: 'dosage', header: t('dosage') }
         ];
-        exportToPDF(prescriptions, 'prescriptions-export', 'Prescriptions List', columns);
+        const enrichedPrescriptions = prescriptions.map(p => {
+            const patient = getPatient(p.patientId);
+            const doctor = getDoctor(p.doctorId);
+            return {
+                ...p,
+                patientName: patient ? patient.fullName : t('unknown'),
+                doctorName: doctor ? doctor.name : t('unknown')
+            };
+        });
+        exportToPDF(enrichedPrescriptions, 'prescriptions-export', t('prescriptions'), columns);
         exportMenu.classList.add('hidden');
-    });
-
-    // Pagination
-    container.querySelectorAll('button[data-page]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const p = btn.getAttribute('data-page');
-        if (p === 'prev') {
-          if (prescriptionsState.page > 1) {
-            prescriptionsState.page--;
-            updateContent(container);
-          }
-        } else if (p === 'next') {
-          const totalPages = Math.ceil(getPrescriptions().length / prescriptionsState.itemsPerPage);
-          if (prescriptionsState.page < totalPages) {
-             prescriptionsState.page++;
-             updateContent(container);
-          }
-        } else {
-          prescriptionsState.page = parseInt(p);
-          updateContent(container);
-        }
-      });
     });
 
     // Add Modal Open
@@ -597,42 +642,63 @@
         }
 
         if (menu) {
-            menu.classList.toggle('hidden');
-            if (!menu.classList.contains('hidden')) {
-                prescriptionsState.activeMenuId = id;
-                activeMenuAnchor = btn;
-                activeMenuEl = menu;
-            } else {
-                prescriptionsState.activeMenuId = null;
-                activeMenuAnchor = null;
-                activeMenuEl = null;
+          const btnRect = btn.getBoundingClientRect();
+          const isRTL = document.documentElement.dir === 'rtl';
+          menu.classList.remove('hidden');
+          menu.style.visibility = 'hidden';
+          menu.style.top = `${btnRect.bottom + 8}px`;
+          menu.style.left = `${isRTL ? btnRect.left : btnRect.right - 192}px`; // 192px ~ w-48
+          // Measure then adjust for viewport overflow
+          requestAnimationFrame(() => {
+            const mw = menu.offsetWidth;
+            const mh = menu.offsetHeight;
+            let top = btnRect.bottom + 8;
+            if (top + mh > window.innerHeight) {
+              top = btnRect.top - mh - 8;
             }
+            let left = isRTL ? btnRect.left : btnRect.right - mw;
+            if (left < 8) left = 8;
+            if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+            menu.style.top = `${top}px`;
+            menu.style.left = `${left}px`;
+            menu.style.visibility = 'visible';
+            activeMenuAnchor = btn;
+            activeMenuEl = menu;
+          });
+          
+          prescriptionsState.activeMenuId = id;
         }
       });
     });
-    
+
     // Menu item clicks (Edit/View/Delete)
     // Since menus are re-rendered, we can attach listeners to the container
-    // asking if the click target is inside a menu button
+    // asking if click target is inside a menu button
     container.addEventListener('click', (e) => {
         const actionBtn = e.target.closest('button[data-action]');
         if (!actionBtn) return;
-        
+
         const action = actionBtn.getAttribute('data-action');
         const id = actionBtn.getAttribute('data-id');
-        
+
+        // Close menu when an action is clicked
+        const menu = container.querySelector(`#prescription-menu-${id}`);
+        if (menu) menu.classList.add('hidden');
+        activeMenuEl = null;
+        activeMenuAnchor = null;
+
         if (action === 'view') {
             const p = getPrescription(id);
             if (p) {
                 const patient = getPatient(p.patientId);
                 const doctor = getDoctor(p.doctorId);
-                
+
                 container.querySelector('#view-patient').innerText = patient ? patient.fullName : t('unknown');
                 container.querySelector('#view-doctor').innerText = doctor ? doctor.name : t('unknown');
                 container.querySelector('#view-date').innerText = p.date;
                 container.querySelector('#view-dosage').innerText = p.dosage;
                 container.querySelector('#view-medications').innerText = p.medications;
-                
+
                 const modal = container.querySelector('#view-modal');
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
@@ -645,7 +711,7 @@
                 container.querySelector('#edit-medications').value = p.medications;
                 container.querySelector('#edit-dosage').value = p.dosage;
                 container.querySelector('#edit-date').value = p.date;
-                
+
                 // Selects
                 const pSelect = container.querySelector('#edit-patient-id');
                 if (pSelect) pSelect.value = p.patientId;

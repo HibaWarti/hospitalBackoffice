@@ -25,6 +25,7 @@ const translations = {
     delete: "Delete",
     noPatients: "No patients found.",
     showing: "Showing",
+    to: "to",
     of: "of",
     addPatient: "Add Patient",
     editPatient: "Edit Patient",
@@ -33,6 +34,9 @@ const translations = {
     patientDetails: "Patient Details",
     exportCSV: "Export CSV",
     exportPDF: "Export PDF",
+    generatedOn: "Generated on",
+    pdfLibNotLoaded: "PDF export libraries are not loaded.",
+    exportNotAvailable: "Export not available",
     welcome: "Welcome back",
     signIn: "Sign in to access the dashboard",
     username: "Username",
@@ -77,7 +81,19 @@ const translations = {
     dose: "Dose",
     noPrescriptions: "No prescriptions found.",
     unknown: "Unknown",
-    all: "All"
+    all: "All",
+    selectDoctor: "Select Doctor",
+    selectPatient: "Select Patient",
+    entries: "entries",
+    previous: "Previous",
+    next: "Next",
+    filter: "Filter",
+    details: "Details",
+    close: "Close",
+    confirm: "Confirm",
+    noData: "No data available",
+    total: "Total",
+    fillAllFields: "Please fill all fields"
   },
   fr: {
     dashboard: "Tableau de bord",
@@ -104,6 +120,7 @@ const translations = {
     delete: "Supprimer",
     noPatients: "Aucun patient trouvé.",
     showing: "Affichage de",
+    to: "à",
     of: "sur",
     addPatient: "Ajouter un patient",
     editPatient: "Modifier le patient",
@@ -112,6 +129,9 @@ const translations = {
     patientDetails: "Détails du patient",
     exportCSV: "Exporter CSV",
     exportPDF: "Exporter PDF",
+    generatedOn: "Généré le",
+    pdfLibNotLoaded: "Les bibliothèques d'export PDF ne sont pas chargées.",
+    exportNotAvailable: "Export non disponible",
     welcome: "Bon retour",
     signIn: "Connectez-vous pour accéder au tableau de bord",
     username: "Nom d'utilisateur",
@@ -195,7 +215,8 @@ const translations = {
     generalMedicine: "Médecine Générale",
     surgery: "Chirurgie",
     oncology: "Oncologie",
-    all: "Tout"
+    all: "Tout",
+    fillAllFields: "Veuillez remplir tous les champs"
   },
   ar: {
     dashboard: "لوحة القيادة",
@@ -222,6 +243,7 @@ const translations = {
     delete: "حذف",
     noPatients: "لم يتم العثور على مرضى.",
     showing: "عرض",
+    to: "إلى",
     of: "من",
     addPatient: "إضافة مريض",
     editPatient: "تعديل مريض",
@@ -230,6 +252,9 @@ const translations = {
     patientDetails: "تفاصيل المريض",
     exportCSV: "تصدير CSV",
     exportPDF: "تصدير PDF",
+    generatedOn: "تم الإنشاء في",
+    pdfLibNotLoaded: "مكتبات تصدير PDF غير محمّلة.",
+    exportNotAvailable: "التصدير غير متاح",
     welcome: "مرحباً بعودتك",
     signIn: "سجل الدخول للوصول إلى لوحة القيادة",
     username: "اسم المستخدم",
@@ -315,7 +340,8 @@ const translations = {
     headDoctor: "رئيس القسم",
     serviceName: "اسم الخدمة",
     prescriptionDate: "تاريخ الوصفة",
-    all: "الكل"
+    all: "الكل",
+    fillAllFields: "يرجى ملء جميع الحقول"
   }
 };
 
@@ -331,7 +357,9 @@ function setLanguage(lang) {
 }
 
 function t(key) {
-  return translations[currentLang][key] || key;
+  const langTable = translations[currentLang] || {};
+  const enTable = translations.en || {};
+  return langTable[key] || enTable[key] || key;
 }
 
 function getCurrentLang() {

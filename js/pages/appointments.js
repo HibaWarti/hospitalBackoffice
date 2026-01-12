@@ -27,7 +27,8 @@
     editingId: null,
     viewingId: null,
     filterDoctorId: "",
-    filterStatus: ""
+    filterStatus: "",
+    filterDate: ""
   };
 
   function render() {
@@ -90,7 +91,8 @@
       );
       const matchesDoctor = appointmentsState.filterDoctorId ? String(app.doctorId) === String(appointmentsState.filterDoctorId) : true;
       const matchesStatus = appointmentsState.filterStatus ? String(app.status) === String(appointmentsState.filterStatus) : true;
-      return matchesSearch && matchesDoctor && matchesStatus;
+      const matchesDate = appointmentsState.filterDate ? app.date === appointmentsState.filterDate : true;
+      return matchesSearch && matchesDoctor && matchesStatus && matchesDate;
     });
 
     // Sort
@@ -278,6 +280,13 @@
                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
+            <input
+              type="date"
+              id="date-filter"
+              value="${appointmentsState.filterDate}"
+              class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              placeholder="${t("date") || 'Date'}"
+            >
             <select id="status-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
               <option value="">${t("status")}</option>
               <option value="scheduled">${t("scheduled")}</option>
@@ -314,17 +323,17 @@
             <table class="w-full text-sm" dir="${isRTL ? 'rtl' : 'ltr'}">
               <thead class="bg-secondary/50 border-b border-border">
                 <tr class="${isRTL ? 'text-right' : 'text-left'}">
-                  <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="date">
-                    <div class="flex items-center">${t("date")} ${renderSortIcon('date')}</div>
-                  </th>
-                  <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="time">
-                    <div class="flex items-center">${t("time")} ${renderSortIcon('time')}</div>
-                  </th>
                   <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="patientName">
                     <div class="flex items-center">${t("patient")} ${renderSortIcon('patientName')}</div>
                   </th>
                   <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="doctorName">
                     <div class="flex items-center">${t("doctor")} ${renderSortIcon('doctorName')}</div>
+                  </th>
+                  <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="date">
+                    <div class="flex items-center">${t("date")} ${renderSortIcon('date')}</div>
+                  </th>
+                  <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="time">
+                    <div class="flex items-center">${t("time")} ${renderSortIcon('time')}</div>
                   </th>
                   <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="status">
                     <div class="flex items-center">${t("status")} ${renderSortIcon('status')}</div>
@@ -335,10 +344,10 @@
               <tbody id="appointments-table-body" class="divide-y divide-border">
                 ${paginatedAppointments.map(app => `
                   <tr class="hover:bg-muted transition-colors group">
-                    <td class="p-4 font-medium text-left rtl:text-right">${app.date}</td>
-                    <td class="p-4 text-left rtl:text-right">${app.time}</td>
                     <td class="p-4 text-left rtl:text-right">${app.patientName}</td>
                     <td class="p-4 text-left rtl:text-right">${app.doctorName}</td>
+                    <td class="p-4 font-medium text-left rtl:text-right">${app.date}</td>
+                    <td class="p-4 text-left rtl:text-right">${app.time}</td>
                     <td class="p-4 text-left rtl:text-right">
                       <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors border-transparent 
                         ${app.status === 'completed' ? 'bg-success text-success-foreground' : 
@@ -497,19 +506,29 @@
 
     container.querySelector("#export-pdf")?.addEventListener("click", () => {
         const columns = [
-            { key: 'date', header: t('date') },
-            { key: 'time', header: t('time') },
             { key: 'patientName', header: t('patient') },
             { key: 'doctorName', header: t('doctor') },
+            { key: 'date', header: t('date') },
+            { key: 'time', header: t('time') },
             { key: 'status', header: t('status') }
         ];
         // Enrich appointments with names for export
         const enrichedAppointments = getAppointments().map(app => ({
             ...app,
-            patientName: getPatient(app.patientId)?.firstName + ' ' + getPatient(app.patientId)?.lastName,
-            doctorName: getDoctor(app.doctorId)?.firstName + ' ' + getDoctor(app.doctorId)?.lastName
+            patientName: (() => {
+                const p = getPatient(app.patientId);
+                if (!p) return t('unknown');
+                const full = `${String(p.firstName || '').trim()} ${String(p.lastName || '').trim()}`.trim();
+                return full || t('unknown');
+            })(),
+            doctorName: (() => {
+                const d = getDoctor(app.doctorId);
+                if (!d) return t('unknown');
+                const full = `${String(d.firstName || '').trim()} ${String(d.lastName || '').trim()}`.trim();
+                return full || t('unknown');
+            })()
         }));
-        exportToPDF(enrichedAppointments, 'appointments.pdf', 'Appointments List', columns);
+        exportToPDF(enrichedAppointments, 'appointments.pdf', t('appointments'), columns);
         container.querySelector("#export-menu").classList.add("hidden");
     });
 
@@ -568,6 +587,14 @@
             updateContent(container);
         });
     }
+    const dateFilter = container.querySelector("#date-filter");
+    if (dateFilter) {
+        dateFilter.addEventListener("change", (e) => {
+            appointmentsState.filterDate = e.target.value;
+            appointmentsState.page = 1;
+            updateContent(container);
+        });
+    }
 
     const resetBtn = container.querySelector("#reset-filters-btn");
     if (resetBtn) {
@@ -575,6 +602,7 @@
             appointmentsState.search = "";
             appointmentsState.filterDoctorId = "";
             appointmentsState.filterStatus = "";
+            appointmentsState.filterDate = "";
             appointmentsState.sortKey = null;
             appointmentsState.sortOrder = "asc";
             appointmentsState.page = 1;
