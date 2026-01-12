@@ -127,7 +127,7 @@
     // Modal HTML (Add/Edit)
     const modalHTML = doctorsState.isModalOpen ? `
       <div class="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay" id="doctor-modal-overlay">
-        <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+        <div class="w-full max-w-lg bg-card text-card-foreground border border-border rounded-xl shadow-glow animate-fade-in max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 class="text-lg font-semibold">${doctorsState.editingId ? t("editDoctor") : t("addDoctor")}</h2>
             <button id="close-modal-x" class="text-muted-foreground hover:text-foreground">
@@ -181,7 +181,7 @@
     const viewDoctor = doctorsState.viewingId ? getDoctor(doctorsState.viewingId) : null;
     const detailsModalHTML = (doctorsState.viewingId && viewDoctor) ? `
       <div class="fixed inset-0 z-[1001] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay" id="doctor-details-overlay">
-        <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in" onclick="event.stopPropagation()">
+        <div class="w-full max-w-lg bg-card text-card-foreground border border-border rounded-xl shadow-glow animate-fade-in" onclick="event.stopPropagation()">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 class="text-lg font-semibold">${t("doctorDetails")}</h2>
             <button id="close-details-x" class="text-muted-foreground hover:text-foreground">

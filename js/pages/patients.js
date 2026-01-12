@@ -255,7 +255,7 @@ function generateHTML() {
 
       <!-- Patient Form Modal -->
       <div id="patient-modal" class="fixed inset-0 z-[1001] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay">
-        <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in max-h-[90vh] overflow-y-auto">
+        <div class="w-full max-w-lg bg-card text-card-foreground border border-border rounded-xl shadow-glow animate-fade-in max-h-[90vh] overflow-y-auto">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 id="patient-modal-title" class="text-lg font-semibold">${t("addPatient")}</h2>
             <button id="patient-modal-close" class="text-muted-foreground hover:text-foreground">
@@ -287,7 +287,7 @@ function generateHTML() {
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
                 <label class="text-sm font-medium">${t("dateOfBirth")}</label>
-                <input name="dateOfBirth" type="date" required class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                <input name="dateOfBirth" type="date" lang="fr" required class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
               </div>
               <div class="space-y-2">
                 <label class="text-sm font-medium">${t("gender")}</label>
@@ -334,7 +334,7 @@ function generateHTML() {
 
        <!-- View Details Modal -->
       <div id="patient-details-modal" class="fixed inset-0 z-[1001] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay">
-        <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in">
+        <div class="w-full max-w-lg bg-card text-card-foreground border border-border rounded-xl shadow-glow animate-fade-in">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 class="text-lg font-semibold">${t("patientDetails")}</h2>
             <button id="patient-details-close-x" class="text-muted-foreground hover:text-foreground">
@@ -574,7 +574,7 @@ function attachListeners(container) {
   const detailExportBtn = container.querySelector('#patient-details-export');
   if (detailExportBtn) {
     detailExportBtn.addEventListener('click', () => {
-      const element = container.querySelector('#patient-details-modal .bg-white');
+      const element = container.querySelector('#patient-details-modal');
       // Hide close button and other non-printable elements is handled by ignoreElements in utils
       if (element && patientsState.viewingId) {
         const patient = getPatient(patientsState.viewingId);
@@ -670,7 +670,7 @@ function attachListeners(container) {
           <div><span class="text-muted-foreground">${t("phone")}:</span> <span class="font-medium block">${patient.phone}</span></div>
           <div><span class="text-muted-foreground">${t("bloodGroup")}:</span> <span class="font-medium block">${patient.bloodGroup}</span></div>
           <div><span class="text-muted-foreground">${t("gender")}:</span> <span class="font-medium block capitalize">${patient.gender}</span></div>
-          <div><span class="text-muted-foreground">${t("dateOfBirth")}:</span> <span class="font-medium block">${patient.dateOfBirth}</span></div>
+          <div><span class="text-muted-foreground">${t("dateOfBirth")}:</span> <span class="font-medium block">${App.Services.Utils.formatDateDMY(patient.dateOfBirth)}</span></div>
           <div class="col-span-2"><span class="text-muted-foreground">${t("address")}:</span> <span class="font-medium block">${patient.address}</span></div>
         </div>
       `;
@@ -681,7 +681,7 @@ function attachListeners(container) {
         const newBtn = exportBtn.cloneNode(true);
         exportBtn.replaceWith(newBtn);
         newBtn.addEventListener('click', () => {
-          const element = detailsModal.querySelector('.bg-white');
+          const element = detailsModal.querySelector('#patient-details-modal');
           exportElementToPDF(element, `patient_${patient.firstName}_${patient.lastName}`);
         });
       }

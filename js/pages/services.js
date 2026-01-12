@@ -116,7 +116,7 @@
     // View Details Modal HTML
     const viewModalHTML = `
       <div id="service-details-modal" class="fixed inset-0 z-[1001] ${servicesState.viewingId ? 'flex' : 'hidden'} items-center justify-center p-4">
-        <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in">
+        <div class="w-full max-w-lg bg-card text-card-foreground border border-border rounded-xl shadow-glow animate-fade-in">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 class="text-lg font-semibold">${t("serviceDetails")}</h2>
             <button id="close-details-x" class="text-muted-foreground hover:text-foreground">
@@ -140,7 +140,7 @@
     // Add/Edit Modal HTML
     const modalHTML = `
       <div id="service-modal" class="fixed inset-0 z-[1001] ${servicesState.isModalOpen ? 'flex' : 'hidden'} items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay">
-        <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in">
+        <div class="w-full max-w-lg bg-card text-card-foreground border border-border rounded-xl shadow-glow animate-fade-in">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 id="service-modal-title" class="text-lg font-semibold">${servicesState.editingId ? t("editService") : t("addService")}</h2>
             <button id="close-modal-x" class="text-muted-foreground hover:text-foreground">
@@ -622,7 +622,7 @@
                         </div>
                     `;
                     container.querySelector("#export-detail-pdf-btn")?.addEventListener("click", () => {
-                        const element = container.querySelector('#service-details-modal .bg-white');
+                        const element = container.querySelector('#service-details-modal');
                         if (element) {
                             exportElementToPDF(element, `service_${service.name}`);
                         }

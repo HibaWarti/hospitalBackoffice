@@ -101,7 +101,19 @@ const translations = {
     createdSuccessfully: "Created successfully",
     updatedSuccessfully: "Updated successfully",
     deletedSuccessfully: "Deleted successfully",
-    deleteFailed: "Delete failed"
+    deleteFailed: "Delete failed",
+    addDoctor: "Add Doctor",
+    addAppointment: "Add Appointment",
+    addService: "Add Service",
+    addPrescription: "Add Prescription",
+    editDoctor: "Edit Doctor",
+    editAppointment: "Edit Appointment",
+    editService: "Edit Service",
+    editPrescription: "Edit Prescription",
+    doctorDetails: "Doctor Details",
+    appointmentDetails: "Appointment Details",
+    serviceDetails: "Service Details",
+    prescriptionDetails: "Prescription Details"
   },
   fr: {
     dashboard: "Tableau de bord",

@@ -56,6 +56,36 @@ html.dark {
   --ring: 199 89% 48%;
 }
 
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+
+html input[type="date"],
+html input[type="time"] { color-scheme: light; }
+html.dark input[type="date"],
+html.dark input[type="time"] { color-scheme: dark; }
+
+/* Improve date/time picker icon visibility in dark mode (Chrome/Edge/Safari) */
+html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+html.dark input[type="time"]::-webkit-calendar-picker-indicator,
+html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
+html[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2) !important;
+  opacity: 0.95;
+}
+
+html.dark input[type="time"]::-webkit-clear-button,
+html.dark input[type="time"]::-webkit-inner-spin-button,
+html[data-theme="dark"] input[type="time"]::-webkit-clear-button,
+html[data-theme="dark"] input[type="time"]::-webkit-inner-spin-button {
+  filter: invert(1) brightness(1.2) !important;
+  opacity: 0.95;
+}
+
+html.dark .calendar-icon,
+html[data-theme="dark"] .calendar-icon {
+  color: hsl(var(--foreground));
+}
+
 body {
   margin: 0;
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;

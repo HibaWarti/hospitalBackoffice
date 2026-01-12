@@ -19,6 +19,7 @@
   function toastWarning(message) { return App.Services.Utils.toastWarning(message); }
   function toastError(message) { return App.Services.Utils.toastError(message); }
   function confirmDialog(options) { return App.Services.Utils.confirmDialog(options); }
+  function formatDateDMY(value) { return App.Services.Utils.formatDateDMY(value); }
 
   // State
   const prescriptionsState = {
@@ -166,13 +167,16 @@
                             class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                     </div>
-                    <input
-                        type="date"
-                        id="date-filter"
-                        value="${prescriptionsState.filterDate}"
-                        class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        placeholder="${t("date") || 'Date'}"
-                    >
+                    <div class="relative">
+                        <input
+                            type="date"
+                            lang="fr"
+                            id="date-filter"
+                            value="${prescriptionsState.filterDate}"
+                            class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            placeholder="${t("date") || 'Date'}"
+                        >
+                    </div>
                 </div>
 
                 <div class="flex gap-2">
@@ -240,7 +244,7 @@
                     <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${doctorName}</td>
                     <td class="p-4 align-middle font-medium text-foreground ${isRTL ? 'text-right' : 'text-left'}">${p.medications}</td>
                     <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${p.dosage || '-'}</td>
-                    <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${date}</td>
+                    <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${formatDateDMY(date)}</td>
                     <td class="p-4 align-middle text-right rtl:text-left">
                       <div class="relative inline-block text-left rtl:text-right">
                         <button data-action="menu" data-id="${p.id}" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-8 w-8">
@@ -287,14 +291,14 @@
     return `
     <!-- Add Modal -->
     <div id="add-modal" class="fixed inset-0 z-[1001] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
-        <div class="flex items-center justify-between p-4 border-b">
+      <div class="w-full max-w-lg bg-card text-card-foreground border border-border rounded-xl shadow-glow animate-fade-in" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between p-4 border-b border-border">
           <h2 class="text-lg font-semibold">${t('addPrescription')}</h2>
           <button data-action="close-modal" class="text-muted-foreground hover:text-foreground">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
-        <div class="p-4 space-y-4">
+        <div class="p-6 space-y-4">
           <div class="space-y-2">
             <label class="text-sm font-medium leading-none">${t('medications')}</label>
             <input type="text" id="add-medications" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
@@ -319,10 +323,10 @@
           </div>
           <div class="space-y-2">
             <label class="text-sm font-medium leading-none">${t('date')}</label>
-            <input type="date" id="add-date" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <input type="date" lang="fr" id="add-date" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
           </div>
         </div>
-        <div class="flex justify-end gap-2 p-4 border-t bg-muted/50">
+        <div class="flex justify-end gap-2 p-6 border-t border-border bg-muted/20">
           <button data-action="close-modal" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 py-2 px-4">
             ${t('cancel')}
           </button>
@@ -335,14 +339,14 @@
 
     <!-- Edit Modal -->
     <div id="edit-modal" class="fixed inset-0 z-[1001] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay">
-      <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
-        <div class="flex items-center justify-between p-4 border-b">
+      <div class="w-full max-w-lg bg-card text-card-foreground border border-border rounded-xl shadow-glow animate-fade-in" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between p-4 border-b border-border">
           <h2 class="text-lg font-semibold">${t('editPrescription')}</h2>
           <button data-action="close-modal" class="text-muted-foreground hover:text-foreground">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
-        <div class="p-4 space-y-4">
+        <div class="p-6 space-y-4">
           <input type="hidden" id="edit-id">
           <div class="space-y-2">
             <label class="text-sm font-medium leading-none">${t('medications')}</label>
@@ -366,10 +370,10 @@
           </div>
           <div class="space-y-2">
             <label class="text-sm font-medium leading-none">${t('date')}</label>
-            <input type="date" id="edit-date" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <input type="date" lang="fr" id="edit-date" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
           </div>
         </div>
-        <div class="flex justify-end gap-2 p-4 border-t bg-muted/50">
+        <div class="flex justify-end gap-2 p-6 border-t border-border bg-muted/20">
           <button data-action="close-modal" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 py-2 px-4">
             ${t('cancel')}
           </button>
@@ -382,14 +386,14 @@
 
     <!-- View Modal -->
     <div id="view-modal" class="fixed inset-0 z-[1001] hidden items-center justify-center bg-black/50 backdrop-blur-sm global-overlay">
-      <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
-        <div class="flex items-center justify-between p-4 border-b">
+      <div class="w-full max-w-lg bg-card text-card-foreground border border-border rounded-xl shadow-glow animate-fade-in max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+        <div class="flex items-center justify-between p-4 border-b border-border">
           <h2 class="text-lg font-semibold">${t('prescriptionDetails')}</h2>
           <button data-action="close-modal" class="text-muted-foreground hover:text-foreground">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
-        <div class="p-4 space-y-4">
+        <div class="p-6 space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-sm font-medium text-muted-foreground">${t('patient')}</label>
@@ -413,7 +417,7 @@
             </div>
           </div>
         </div>
-        <div class="flex justify-end gap-2 p-4 border-t bg-muted/50">
+        <div class="flex justify-end gap-2 p-6 border-t border-border bg-muted/20">
            <button id="view-export-pdf" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 py-2 px-4">
             <i data-lucide="file-down" class="w-4 h-4 ${gapClass}"></i>
             ${t('exportPDF')}
@@ -701,7 +705,7 @@
 
                 container.querySelector('#view-patient').innerText = patient ? patient.fullName : t('unknown');
                 container.querySelector('#view-doctor').innerText = doctor ? doctor.name : t('unknown');
-                container.querySelector('#view-date').innerText = p.date;
+                container.querySelector('#view-date').innerText = formatDateDMY(p.date);
                 container.querySelector('#view-dosage').innerText = p.dosage;
                 container.querySelector('#view-medications').innerText = p.medications;
 

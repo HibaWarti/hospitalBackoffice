@@ -65,6 +65,64 @@ function confirmDialog(options) {
   }).then(r => !!r.isConfirmed);
 }
 
+function formatDateDMY(value) {
+  if (!value) return '';
+
+  if (value instanceof Date) {
+    const dd = String(value.getDate()).padStart(2, '0');
+    const mm = String(value.getMonth() + 1).padStart(2, '0');
+    const yyyy = String(value.getFullYear());
+    return `${dd}/${mm}/${yyyy}`;
+  }
+
+  const str = String(value).trim();
+  if (!str) return '';
+
+  // Already in dd/mm/yyyy
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) return str;
+
+  // Slash format (m/d/yyyy or mm/dd/yyyy) - normalize when possible
+  const slash = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slash) {
+    const a = parseInt(slash[1], 10);
+    const b = parseInt(slash[2], 10);
+    const yyyy = slash[3];
+
+    // If one side can't be a month, infer the other
+    // - a > 12 => dd/mm
+    // - b > 12 => mm/dd
+    let dd;
+    let mm;
+    if (a > 12 && b <= 12) {
+      dd = a;
+      mm = b;
+    } else if (b > 12 && a <= 12) {
+      dd = b;
+      mm = a;
+    } else {
+      // Ambiguous: assume legacy MM/DD/YYYY and normalize to DD/MM/YYYY
+      dd = b;
+      mm = a;
+    }
+
+    if (mm >= 1 && mm <= 12 && dd >= 1 && dd <= 31) {
+      return `${String(dd).padStart(2, '0')}/${String(mm).padStart(2, '0')}/${yyyy}`;
+    }
+    return str;
+  }
+
+  // ISO yyyy-mm-dd (or yyyy-mm-ddTHH:mm)
+  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    const yyyy = m[1];
+    const mm = m[2];
+    const dd = m[3];
+    return `${dd}/${mm}/${yyyy}`;
+  }
+
+  return str;
+}
+
 function exportToCSV(data, filename, columns) {
   const pad = (n) => String(n).padStart(2, '0');
   const now = new Date();
@@ -324,6 +382,7 @@ App.Services.Utils = {
   exportToPDF,
   exportDetailsToPDF,
   exportElementToPDF,
+  formatDateDMY,
   toastSuccess,
   toastWarning,
   toastError,

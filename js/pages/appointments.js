@@ -14,6 +14,7 @@
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
   function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
+  function formatDateDMY(value) { return App.Services.Utils.formatDateDMY(value); }
   function toastSuccess(message) { return App.Services.Utils.toastSuccess(message); }
   function toastError(message) { return App.Services.Utils.toastError(message); }
   function confirmDialog(options) { return App.Services.Utils.confirmDialog(options); }
@@ -148,7 +149,7 @@
             const app = enrichedAppointments.find(a => a.id === appointmentsState.viewingId);
             if (!app) return '';
             return `
-            <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in" id="details-modal-content">
+            <div class="w-full max-w-lg bg-card text-card-foreground border border-border rounded-xl shadow-glow animate-fade-in" id="details-modal-content">
               <div class="p-6 border-b border-border flex items-center justify-between">
                 <h2 class="text-lg font-semibold">${t("appointmentDetails")}</h2>
                 <button id="close-details-x" class="text-muted-foreground hover:text-foreground">
@@ -159,7 +160,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <p class="text-sm font-medium text-muted-foreground">${t("date")}</p>
-                        <p class="text-base font-medium mt-1">${app.date}</p>
+                        <p class="text-base font-medium mt-1">${formatDateDMY(app.date)}</p>
                     </div>
                     <div>
                         <p class="text-sm font-medium text-muted-foreground">${t("time")}</p>
@@ -199,7 +200,7 @@
         })() : ''}
 
         ${appointmentsState.isModalOpen ? `
-        <div class="w-full max-w-lg bg-white border border-border rounded-xl shadow-glow animate-fade-in" id="form-modal-content">
+        <div class="w-full max-w-lg bg-card text-card-foreground border border-border rounded-xl shadow-glow animate-fade-in" id="form-modal-content">
           <div class="p-6 border-b border-border flex items-center justify-between">
             <h2 class="text-lg font-semibold">${appointmentsState.editingId ? t("editAppointment") : t("addAppointment")}</h2>
             <button id="close-modal-x" class="text-muted-foreground hover:text-foreground">
@@ -210,7 +211,7 @@
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
                 <label for="date" class="text-sm font-medium">${t("date")}</label>
-                <input id="date" name="date" type="date" class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" required />
+                <input id="date" name="date" type="date" lang="fr" class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" required />
               </div>
               <div class="space-y-2">
                 <label for="time" class="text-sm font-medium">${t("time")}</label>
@@ -283,6 +284,7 @@
             </div>
             <input
               type="date"
+              lang="fr"
               id="date-filter"
               value="${appointmentsState.filterDate}"
               class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -347,7 +349,7 @@
                   <tr class="hover:bg-muted transition-colors group">
                     <td class="p-4 text-left rtl:text-right">${app.patientName}</td>
                     <td class="p-4 text-left rtl:text-right">${app.doctorName}</td>
-                    <td class="p-4 font-medium text-left rtl:text-right">${app.date}</td>
+                    <td class="p-4 font-medium text-left rtl:text-right">${formatDateDMY(app.date)}</td>
                     <td class="p-4 text-left rtl:text-right">${app.time}</td>
                     <td class="p-4 text-left rtl:text-right">
                       <span class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors border-transparent 
