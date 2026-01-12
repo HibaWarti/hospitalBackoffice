@@ -190,7 +190,8 @@ function renderLogin() {
 
     const user = App.Services.Auth.login(username, password);
     if (user) {
-      localStorage.removeItem('last_page');
+      localStorage.setItem('last_page', 'dashboard');
+      window.location.hash = 'dashboard';
       renderShell(user);
     } else {
       errorBox.classList.remove("hidden");
@@ -429,9 +430,6 @@ function renderShell(user) {
     
     // Re-render shell to update translations
     renderShell(user);
-    
-    // Always start at dashboard after re-render
-    navigateTo('dashboard');
   });
 
   document.addEventListener("click", (e) => {
@@ -439,8 +437,10 @@ function renderShell(user) {
     if (!insideLang) langMenu.classList.add("hidden");
   });
 
-  // Initial Page Load: always start at dashboard after login
-  navigateTo('dashboard');
+  // Initial Page Load
+  const hashKey = (window.location.hash || '').replace(/^#/, '');
+  const initialKey = hashKey || localStorage.getItem('last_page') || 'dashboard';
+  navigateTo(initialKey);
 
   window.addEventListener("resize", updateHeaderLayout);
   window.addEventListener("load", updateHeaderLayout);
@@ -471,6 +471,9 @@ function navigateTo(key) {
   const lang = document.documentElement.lang || App.Services.I18n.getCurrentLang() || 'en';
   document.querySelectorAll('input[type="date"], input[type="time"]').forEach((el) => el.setAttribute('lang', lang));
   localStorage.setItem('last_page', key);
+  if ((window.location.hash || '').replace(/^#/, '') !== key) {
+    window.location.hash = key;
+  }
 }
 
 function setActiveMenu(activeKey) {
