@@ -3,6 +3,8 @@ const { Auth, I18n } = App.Services;
 
 const appRoot = document.getElementById("app-root");
 
+let inputLangObserver = null;
+
 const menuItems = [
   { key: "dashboard", label: "dashboard", icon: "layout-dashboard" },
   { key: "patients", label: "patients", icon: "users" },
@@ -113,7 +115,7 @@ function renderShell(user) {
         id="sidebar"
         class="hidden md:flex flex-col w-64 bg-sidebar text-sidebar-foreground h-screen sticky top-0"
       >
-        <div class="p-4 border-b border-sidebar-border flex items-center justify-between gap-3">
+        <div id="sidebar-brand" class="p-4 border-b border-sidebar-border flex items-center justify-between gap-3">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
               <i data-lucide="building-2" class="w-5 h-5 text-white"></i>
@@ -200,6 +202,32 @@ function renderShell(user) {
   appRoot.innerHTML = shell;
   lucide.createIcons();
 
+  const applyNativeInputLang = (root = document) => {
+    const lang = document.documentElement.lang || App.Services.I18n.getCurrentLang() || 'en';
+    root.querySelectorAll?.('input[type="date"], input[type="time"]').forEach((el) => {
+      el.setAttribute('lang', lang);
+    });
+  };
+
+  if (inputLangObserver) {
+    inputLangObserver.disconnect();
+    inputLangObserver = null;
+  }
+  applyNativeInputLang(document);
+  inputLangObserver = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (!(node instanceof Element)) continue;
+        if (node.matches?.('input[type="date"], input[type="time"]')) {
+          applyNativeInputLang(node.parentElement || document);
+        } else {
+          applyNativeInputLang(node);
+        }
+      }
+    }
+  });
+  inputLangObserver.observe(document.body, { childList: true, subtree: true });
+
   // Initial Language Label
   const currentLangObj = App.Services.I18n.languages.find(l => l.code === currentLang) || App.Services.I18n.languages[0];
   document.getElementById("lang-label").innerHTML = `<img src="${currentLangObj.flag}" class="w-5 h-auto rounded-sm shadow-sm" alt="${currentLangObj.label}"> ${currentLangObj.label}`;
@@ -213,6 +241,7 @@ function renderShell(user) {
   const langMenu = document.getElementById("lang-menu");
   const themeToggle = document.getElementById("theme-toggle");
   const header = document.querySelector("header");
+  const sidebarBrand = document.getElementById("sidebar-brand");
 
   function updateThemeIcon() {
     if (!themeToggle) return;
@@ -227,6 +256,10 @@ function renderShell(user) {
     const sidebarRect = sidebar.getBoundingClientRect();
     const sidebarVisibleDesktop = !isMobile && !sidebar.classList.contains("md:hidden") && sidebarRect.width > 0;
     const isRTL = document.documentElement.dir === 'rtl';
+
+    const brandHeight = sidebarBrand?.offsetHeight || 64;
+    header.style.height = `${brandHeight}px`;
+
     if (sidebarVisibleDesktop) {
       if (isRTL) {
         header.style.right = `${sidebarRect.width}px`;
@@ -241,8 +274,7 @@ function renderShell(user) {
       header.style.right = "0";
       header.style.width = "100%";
     }
-    const headerHeight = header.offsetHeight || 64;
-    mainContent.style.paddingTop = `${headerHeight + 24}px`;
+    mainContent.style.paddingTop = `${brandHeight + 24}px`;
   }
   requestAnimationFrame(updateHeaderLayout);
 
@@ -344,6 +376,8 @@ function navigateTo(key) {
   }
   
   lucide.createIcons();
+  const lang = document.documentElement.lang || App.Services.I18n.getCurrentLang() || 'en';
+  document.querySelectorAll('input[type="date"], input[type="time"]').forEach((el) => el.setAttribute('lang', lang));
   localStorage.setItem('last_page', key);
 }
 

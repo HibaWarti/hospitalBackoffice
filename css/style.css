@@ -54,6 +54,11 @@ html.dark {
   --border: 217 33% 20%;
   --input: 217 33% 20%;
   --ring: 199 89% 48%;
+  --sidebar-background: 222 47% 8%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-accent: 217 33% 14%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217 33% 18%;
 }
 
 html { color-scheme: light; }
@@ -69,16 +74,17 @@ html.dark input[type="date"]::-webkit-calendar-picker-indicator,
 html.dark input[type="time"]::-webkit-calendar-picker-indicator,
 html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator,
 html[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.2) !important;
-  opacity: 0.95;
+  filter: brightness(0) invert(1);
+  opacity: 1;
+  cursor: pointer;
 }
 
 html.dark input[type="time"]::-webkit-clear-button,
 html.dark input[type="time"]::-webkit-inner-spin-button,
 html[data-theme="dark"] input[type="time"]::-webkit-clear-button,
 html[data-theme="dark"] input[type="time"]::-webkit-inner-spin-button {
-  filter: invert(1) brightness(1.2) !important;
-  opacity: 0.95;
+  filter: brightness(0) invert(1);
+  opacity: 1;
 }
 
 html.dark .calendar-icon,
