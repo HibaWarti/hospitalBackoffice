@@ -4,6 +4,7 @@ const { Auth, I18n } = App.Services;
 const appRoot = document.getElementById("app-root");
 
 let inputLangObserver = null;
+let loginOutsideClickHandler = null;
 
 const menuItems = [
   { key: "dashboard", label: "dashboard", icon: "layout-dashboard" },
@@ -24,11 +25,42 @@ function init() {
 }
 
 function renderLogin() {
+  const currentLang = App.Services.I18n.getCurrentLang();
+  const isDark = document.documentElement.classList.contains('dark');
+  const themeIcon = isDark ? 'sun' : 'moon';
+
   const loginView = `
     <div class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/40 to-background p-4 overflow-hidden">
       <div class="absolute inset-0 bg-grid opacity-60 pointer-events-none"></div>
       <div class="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl"></div>
       <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/10 rounded-full blur-3xl"></div>
+
+      <div id="login-top-controls" class="absolute top-4 z-50 flex items-center gap-2">
+        <button id="login-theme-toggle" class="h-10 w-10 inline-flex items-center justify-center rounded-md border border-border bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors" type="button">
+          <i data-lucide="${themeIcon}" class="w-4 h-4"></i>
+        </button>
+
+        <div class="relative">
+          <button id="login-lang-button" class="flex items-center gap-2 border border-border rounded-md px-3 py-2 bg-background text-foreground hover:bg-accent hover:text-accent-foreground transition-colors" type="button">
+            <i data-lucide="globe" class="w-4 h-4"></i>
+            <span id="login-lang-label" class="hidden sm:flex items-center gap-2"></span>
+            <span id="login-lang-flag" class="sm:hidden flex items-center"></span>
+          </button>
+
+          <div id="login-lang-menu" class="hidden absolute right-0 mt-2 w-40 rounded-lg border border-border bg-card text-foreground shadow-md z-50">
+            ${App.Services.I18n.languages
+              .map(
+                (lang) => `
+                  <button data-lang="${lang.code}" data-dir="${lang.dir}" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground flex items-center gap-3 transition-colors ${currentLang === lang.code ? 'bg-accent/10' : ''}">
+                    <img src="${lang.flag}" class="w-5 h-auto rounded-sm shadow-sm" alt="${lang.label}">
+                    <span>${lang.label}</span>
+                  </button>
+                `,
+              )
+              .join("")}
+          </div>
+        </div>
+      </div>
 
       <div class="relative w-full max-w-md glass rounded-2xl shadow-glow p-8 animate-fade-in">
         <div class="flex flex-col items-center gap-4 text-center">
@@ -87,8 +119,69 @@ function renderLogin() {
   appRoot.innerHTML = loginView;
   lucide.createIcons();
 
+  const topControls = document.getElementById("login-top-controls");
+  if (topControls) {
+    const isRTL = document.documentElement.dir === 'rtl';
+    if (isRTL) {
+      topControls.style.left = '1rem';
+      topControls.style.right = '';
+    } else {
+      topControls.style.right = '1rem';
+      topControls.style.left = '';
+    }
+  }
+
   const loginForm = document.getElementById("login-form");
   const errorBox = document.getElementById("login-error");
+
+  const themeToggle = document.getElementById("login-theme-toggle");
+  const langButton = document.getElementById("login-lang-button");
+  const langMenu = document.getElementById("login-lang-menu");
+  const langLabel = document.getElementById("login-lang-label");
+  const langFlag = document.getElementById("login-lang-flag");
+
+  const currentLangObj = App.Services.I18n.languages.find(l => l.code === currentLang) || App.Services.I18n.languages[0];
+  if (langLabel) {
+    langLabel.innerHTML = `<img src="${currentLangObj.flag}" class="w-5 h-auto rounded-sm shadow-sm" alt="${currentLangObj.label}"> ${currentLangObj.label}`;
+  }
+  if (langFlag) {
+    langFlag.innerHTML = `<img src="${currentLangObj.flag}" class="w-5 h-auto rounded-sm shadow-sm" alt="${currentLangObj.label}">`;
+  }
+
+  function updateLoginThemeIcon() {
+    if (!themeToggle) return;
+    const isDarkNow = document.documentElement.classList.contains('dark');
+    const icon = isDarkNow ? 'sun' : 'moon';
+    themeToggle.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+    lucide.createIcons();
+  }
+
+  themeToggle?.addEventListener('click', () => {
+    App.Services.Theme.toggleTheme();
+    updateLoginThemeIcon();
+  });
+
+  langButton?.addEventListener("click", () => {
+    langMenu?.classList.toggle("hidden");
+  });
+
+  langMenu?.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-lang]");
+    if (!btn) return;
+    const code = btn.getAttribute("data-lang");
+    App.Services.I18n.setLanguage(code);
+    renderLogin();
+  });
+
+  if (loginOutsideClickHandler) {
+    document.removeEventListener("click", loginOutsideClickHandler);
+    loginOutsideClickHandler = null;
+  }
+  loginOutsideClickHandler = (e) => {
+    const insideLang = e.target.closest("#login-lang-button") || e.target.closest("#login-lang-menu");
+    if (!insideLang) langMenu?.classList.add("hidden");
+  };
+  document.addEventListener("click", loginOutsideClickHandler);
 
   loginForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -97,6 +190,7 @@ function renderLogin() {
 
     const user = App.Services.Auth.login(username, password);
     if (user) {
+      localStorage.removeItem('last_page');
       renderShell(user);
     } else {
       errorBox.classList.remove("hidden");
@@ -336,9 +430,8 @@ function renderShell(user) {
     // Re-render shell to update translations
     renderShell(user);
     
-    // Restore active page
-    const lastKey = localStorage.getItem('last_page') || 'dashboard';
-    navigateTo(lastKey);
+    // Always start at dashboard after re-render
+    navigateTo('dashboard');
   });
 
   document.addEventListener("click", (e) => {
@@ -346,9 +439,8 @@ function renderShell(user) {
     if (!insideLang) langMenu.classList.add("hidden");
   });
 
-  // Initial Page Load
-  const lastKey = localStorage.getItem('last_page') || 'dashboard';
-  navigateTo(lastKey);
+  // Initial Page Load: always start at dashboard after login
+  navigateTo('dashboard');
 
   window.addEventListener("resize", updateHeaderLayout);
   window.addEventListener("load", updateHeaderLayout);
