@@ -324,7 +324,7 @@
         <div class="glass rounded-2xl shadow-glow overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-sm" dir="${isRTL ? 'rtl' : 'ltr'}">
-              <thead class="bg-secondary/50 border-b border-border">
+              <thead class="bg-secondary/80 dark:bg-secondary/50 border-b border-border">
                 <tr class="${isRTL ? 'text-right' : 'text-left'}">
                   <th class="h-12 px-4 font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors" data-sort="patientName">
                     <div class="flex items-center">${t("patient")} ${renderSortIcon('patientName')}</div>
