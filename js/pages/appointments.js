@@ -14,6 +14,7 @@
   function t(key) { return App.Services.I18n.t(key); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
   function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
+  function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
 
   let appointmentsState = {
@@ -509,6 +510,24 @@
             doctorName: getDoctor(app.doctorId)?.firstName + ' ' + getDoctor(app.doctorId)?.lastName
         }));
         exportToPDF(enrichedAppointments, 'appointments.pdf', 'Appointments List', columns);
+        container.querySelector("#export-menu").classList.add("hidden");
+    });
+
+    container.querySelector('#export-csv')?.addEventListener('click', () => {
+        const columns = [
+            { key: 'date', header: t('date') },
+            { key: 'time', header: t('time') },
+            { key: 'patientName', header: t('patient') },
+            { key: 'doctorName', header: t('doctor') },
+            { key: 'status', header: t('status') }
+        ];
+        // Enrich appointments with names for export
+        const enrichedAppointments = getAppointments().map(app => ({
+            ...app,
+            patientName: getPatient(app.patientId)?.firstName + ' ' + getPatient(app.patientId)?.lastName,
+            doctorName: getDoctor(app.doctorId)?.firstName + ' ' + getDoctor(app.doctorId)?.lastName
+        }));
+        exportToCSV(enrichedAppointments, 'appointments-export', columns);
         container.querySelector("#export-menu").classList.add("hidden");
     });
 

@@ -248,6 +248,7 @@ function generateHTML() {
         </div>
         ` : ''}
       </div>
+    </div>
 
       <!-- Patient Form Modal -->
       <div id="patient-modal" class="fixed inset-0 z-[1001] hidden items-center justify-center p-4 bg-black/50 backdrop-blur-sm global-overlay">
@@ -350,7 +351,6 @@ function generateHTML() {
           </div>
         </div>
       </div>
-    </div>
   `;
 }
 let closeMenusHandler = null;
@@ -564,6 +564,20 @@ function attachListeners(container) {
     closeModals();
     updateContent(container);
   });
+
+  // Detail Export
+  const detailExportBtn = container.querySelector('#patient-details-export');
+  if (detailExportBtn) {
+    detailExportBtn.addEventListener('click', () => {
+      const element = container.querySelector('#patient-details-modal .bg-white');
+      // Hide close button and other non-printable elements is handled by ignoreElements in utils
+      if (element && patientsState.viewingId) {
+        const patient = getPatient(patientsState.viewingId);
+        const name = patient ? `${patient.firstName}_${patient.lastName}` : 'patient';
+        exportElementToPDF(element, `patient_${name}`);
+      }
+    });
+  }
 
   // Table Actions (Delegation)
   container.querySelector("#patients-table-body").addEventListener("click", (e) => {

@@ -8,6 +8,7 @@
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
   function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
+  function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
 
   let doctorsState = {
     search: "",
@@ -509,7 +510,22 @@
 
         container.querySelector('#export-csv')?.addEventListener('click', () => {
             const doctors = getDoctors();
-            exportToCSV(doctors, 'doctors-export', ['firstName', 'lastName', 'email', 'phone', 'specialty']);
+            // Map doctors to ensure clean data for export
+            const dataToExport = doctors.map(d => ({
+                firstName: d.firstName,
+                lastName: d.lastName,
+                email: d.email,
+                phone: d.phone,
+                specialty: d.specialty
+            }));
+            const columns = [
+                { key: 'firstName', header: t('firstName') },
+                { key: 'lastName', header: t('lastName') },
+                { key: 'email', header: t('email') },
+                { key: 'phone', header: t('phone') },
+                { key: 'specialty', header: t('specialty') }
+            ];
+            exportToCSV(dataToExport, 'doctors-export', columns);
             exportMenu.classList.add('hidden');
         });
 
@@ -617,7 +633,7 @@
         newBtn.addEventListener('click', () => {
              const doctor = getDoctor(doctorsState.viewingId);
              if (doctor) {
-                 const modalContent = container.querySelector('#view-doctor-modal > div'); // Targeting the card inside modal
+                 const modalContent = container.querySelector('#doctor-details-overlay > div'); // Targeting the card inside modal
                  const baseName = `${String(doctor.firstName || '').trim()}_${String(doctor.lastName || '').trim()}`.replace(/\s+/g, '_').replace(/[^\w\-]/g, '') || 'doctor';
                  exportElementToPDF(modalContent, baseName);
              }

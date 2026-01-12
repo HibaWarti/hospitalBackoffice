@@ -84,62 +84,122 @@ const SERVICE_NAMES = [
   "Pharmacy",
 ];
 
+const SERVICE_DESCRIPTIONS = {
+  "Emergency": "24/7 urgent care for critical conditions and injuries.",
+  "Cardiology": "Comprehensive heart care including diagnosis, treatment, and surgery.",
+  "Neurology": "Diagnosis and treatment of disorders of the nervous system.",
+  "Pediatrics": "Medical care for infants, children, and adolescents.",
+  "Orthopedics": "Treatment of musculoskeletal system conditions and injuries.",
+  "Radiology": "Diagnostic imaging services including X-ray, MRI, and CT scans.",
+  "Laboratory": "Clinical testing and pathology services for accurate diagnosis.",
+  "Pharmacy": "Dispensing medications and providing pharmaceutical care.",
+};
+
 function generateServices() {
   return SERVICE_NAMES.map((name, index) => ({
     id: `service-${index + 1}`,
     name,
-    description: faker.lorem.sentence(),
+    description: SERVICE_DESCRIPTIONS[name] || faker.lorem.sentence(),
     headDoctorId: undefined,
   }));
 }
 
 function generateDoctors(services) {
-  return Array.from({ length: 50 }, (_, index) => ({
-    id: `doctor-${index + 1}`,
-    firstName: faker.person.firstName(),
-    lastName: faker.person.lastName(),
-    specialty: faker.helpers.arrayElement(SPECIALTIES),
-    phone: faker.phone.number(),
-    email: faker.internet.email(),
-    serviceId: faker.helpers.arrayElement(services).id,
-  }));
+  return Array.from({ length: 50 }, (_, index) => {
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    return {
+      id: `doctor-${index + 1}`,
+      firstName,
+      lastName,
+      name: `${firstName} ${lastName}`,
+      specialty: faker.helpers.arrayElement(SPECIALTIES),
+      phone: faker.phone.number(),
+      email: faker.internet.email(),
+      serviceId: faker.helpers.arrayElement(services).id,
+    };
+  });
 }
 
 function generatePatients(services) {
-  return Array.from({ length: 200 }, (_, index) => ({
-    id: `patient-${index + 1}`,
-    firstName: faker.person.firstName(),
-    lastName: faker.person.lastName(),
-    dateOfBirth: faker.date.birthdate({ min: 1, max: 90 }).toISOString().split("T")[0],
-    gender: faker.helpers.arrayElement(["male", "female"]),
-    address: faker.location.streetAddress(),
-    phone: faker.phone.number(),
-    email: faker.internet.email(),
-    bloodGroup: faker.helpers.arrayElement(BLOOD_GROUPS),
-    registrationDate: faker.date.past({ years: 2 }).toISOString().split("T")[0],
-    serviceId: faker.helpers.arrayElement(services).id,
-  }));
+  return Array.from({ length: 200 }, (_, index) => {
+    const firstName = faker.person.firstName();
+    const lastName = faker.person.lastName();
+    return {
+      id: `patient-${index + 1}`,
+      firstName,
+      lastName,
+      fullName: `${firstName} ${lastName}`,
+      dateOfBirth: faker.date.birthdate({ min: 1, max: 90 }).toISOString().split("T")[0],
+      gender: faker.helpers.arrayElement(["male", "female"]),
+      address: faker.location.streetAddress(),
+      phone: faker.phone.number(),
+      email: faker.internet.email(),
+      bloodGroup: faker.helpers.arrayElement(BLOOD_GROUPS),
+      registrationDate: faker.date.past({ years: 2 }).toISOString().split("T")[0],
+      serviceId: faker.helpers.arrayElement(services).id,
+    };
+  });
 }
 
 function generateAppointments(patients, doctors, services) {
-  const statuses = ["scheduled", "cancelled", "completed"];
+  const statuses = ["scheduled", "cancelled", "completed", "completed", "completed", "scheduled"]; // Weighted to have more completed
 
-  return Array.from({ length: 500 }, (_, index) => {
+  // Helper to find service for a doctor
+  const getServiceForDoctor = (doctorId) => {
+    const doctor = doctors.find(d => d.id === doctorId);
+    return doctor ? services.find(s => s.id === doctor.serviceId) : faker.helpers.arrayElement(services);
+  };
+
+  // Generate a base of appointments scattered over the last 60 days
+  const baseAppointments = Array.from({ length: 400 }, (_, index) => {
     const date = faker.date.between({
-      from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      to: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      from: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+      to: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
     });
+
+    const doctor = faker.helpers.arrayElement(doctors);
+    const service = getServiceForDoctor(doctor.id);
 
     return {
       id: `appointment-${index + 1}`,
       date: date.toISOString().split("T")[0],
       time: `${faker.number.int({ min: 8, max: 17 })}:${faker.helpers.arrayElement(["00", "30"])}`,
       patientId: faker.helpers.arrayElement(patients).id,
-      doctorId: faker.helpers.arrayElement(doctors).id,
-      serviceId: faker.helpers.arrayElement(services).id,
+      doctorId: doctor.id,
+      serviceId: service ? service.id : faker.helpers.arrayElement(services).id,
       status: faker.helpers.arrayElement(statuses),
     };
   });
+
+  // Ensure we have good data for the "Last 7 Days" chart
+  const recentAppointments = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const dayDate = new Date(today);
+    dayDate.setDate(today.getDate() - i);
+    const dateStr = dayDate.toISOString().split("T")[0];
+    
+    // Create a wave pattern or varying counts for the chart
+    const count = Math.floor(Math.random() * 15) + 5; // 5 to 20 appointments per day
+    
+    for (let j = 0; j < count; j++) {
+      const doctor = faker.helpers.arrayElement(doctors);
+      const service = getServiceForDoctor(doctor.id);
+      
+      recentAppointments.push({
+        id: `appointment-recent-${i}-${j}`,
+        date: dateStr,
+        time: `${faker.number.int({ min: 8, max: 17 })}:${faker.helpers.arrayElement(["00", "30"])}`,
+        patientId: faker.helpers.arrayElement(patients).id,
+        doctorId: doctor.id,
+        serviceId: service ? service.id : faker.helpers.arrayElement(services).id,
+        status: faker.helpers.arrayElement(statuses),
+      });
+    }
+  }
+
+  return [...baseAppointments, ...recentAppointments];
 }
 
 function generatePrescriptions(patients, doctors) {
@@ -161,6 +221,7 @@ function generatePrescriptions(patients, doctors) {
     medications: faker.helpers.arrayElements(medications, { min: 1, max: 3 }).join(", "),
     dosage: `${faker.number.int({ min: 1, max: 3 })} times daily`,
     duration: `${faker.number.int({ min: 5, max: 30 })} days`,
+    date: faker.date.past({ years: 1 }).toISOString().split("T")[0],
     prescriptionDate: faker.date.past({ years: 1 }).toISOString().split("T")[0],
   }));
 }
@@ -188,6 +249,21 @@ function initializeData() {
 
     const prescriptions = generatePrescriptions(patients, doctors);
     localStorage.setItem(STORAGE_KEYS.prescriptions, JSON.stringify(prescriptions));
+  } else {
+    // Force data refresh if it looks like old data (e.g. "doctor-1" name missing or "Patient" name missing)
+    const doctors = JSON.parse(localStorage.getItem(STORAGE_KEYS.doctors) || '[]');
+    const patients = JSON.parse(localStorage.getItem(STORAGE_KEYS.patients) || '[]');
+    const services = JSON.parse(localStorage.getItem(STORAGE_KEYS.services) || '[]');
+    
+    const needsRefresh = 
+      (doctors.length > 0 && (!doctors[0].name || doctors[0].name === "Doctor 1")) || 
+      (patients.length > 0 && !patients[0].fullName) ||
+      (services.length > 0 && services[0].description && services[0].description.includes("Lorem ipsum"));
+
+    if (needsRefresh) {
+        console.log("Detecting old data schema, refreshing data...");
+        resetData();
+    }
   }
 }
 

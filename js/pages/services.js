@@ -8,6 +8,7 @@
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
   function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
+  function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
 
   let servicesState = {
     search: "",
@@ -607,7 +608,10 @@
                         </div>
                     `;
                     container.querySelector("#export-detail-pdf-btn")?.addEventListener("click", () => {
-                        exportDetailsToPDF(service, `service_${service.name}`, t('serviceDetails'), [{key: 'name', header: t('name')}, {key: 'description', header: t('description')}]);
+                        const element = container.querySelector('#service-details-modal .bg-white');
+                        if (element) {
+                            exportElementToPDF(element, `service_${service.name}`);
+                        }
                     });
                 }
             }
