@@ -13,6 +13,23 @@
   function toastError(message) { return App.Services.Utils.toastError(message); }
   function confirmDialog(options) { return App.Services.Utils.confirmDialog(options); }
 
+  function getDataAsync() { return App.Services.DataAsync || null; }
+
+  async function addDoctorAsync(d) {
+    const api = getDataAsync();
+    return api ? api.addDoctor(d) : addDoctor(d);
+  }
+
+  async function updateDoctorAsync(id, updates) {
+    const api = getDataAsync();
+    return api ? api.updateDoctor(id, updates) : updateDoctor(id, updates);
+  }
+
+  async function deleteDoctorAsync(id) {
+    const api = getDataAsync();
+    return api ? api.deleteDoctor(id) : deleteDoctor(id);
+  }
+
   let doctorsState = {
     search: "",
     sortKey: null,
@@ -643,16 +660,16 @@
 
     const form = container.querySelector('#doctor-form');
     if (form) {
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             
             if (doctorsState.editingId) {
-                updateDoctor(doctorsState.editingId, data);
+                await updateDoctorAsync(doctorsState.editingId, data);
                 toastSuccess(t('updatedSuccessfully'));
             } else {
-                addDoctor(data);
+                await addDoctorAsync(data);
                 toastSuccess(t('createdSuccessfully'));
             }
             closeModal();
@@ -735,9 +752,9 @@
                     title: t('confirm'),
                     text: t('confirmDeleteDoctor') || t('confirmDelete'),
                     icon: 'warning',
-                }).then((ok) => {
+                }).then(async (ok) => {
                     if (!ok) return;
-                    const deleted = deleteDoctor(id);
+                    const deleted = await deleteDoctorAsync(id);
                     if (!deleted) {
                         toastError(t('deleteFailed'));
                         return;

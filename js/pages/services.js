@@ -12,6 +12,23 @@
   function toastError(message) { return App.Services.Utils.toastError(message); }
   function confirmDialog(options) { return App.Services.Utils.confirmDialog(options); }
 
+  function getDataAsync() { return App.Services.DataAsync || null; }
+
+  async function addServiceAsync(s) {
+    const api = getDataAsync();
+    return api ? api.addService(s) : addService(s);
+  }
+
+  async function updateServiceAsync(id, updates) {
+    const api = getDataAsync();
+    return api ? api.updateService(id, updates) : updateService(id, updates);
+  }
+
+  async function deleteServiceAsync(id) {
+    const api = getDataAsync();
+    return api ? api.deleteService(id) : deleteService(id);
+  }
+
   let servicesState = {
     search: "",
     sortKey: null,
@@ -548,16 +565,16 @@
 
     // Form Submit
     if (form) {
-        form.addEventListener("submit", (e) => {
+        form.addEventListener("submit", async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
             
             if (servicesState.editingId) {
-                updateService(servicesState.editingId, data);
+                await updateServiceAsync(servicesState.editingId, data);
                 toastSuccess(t('updatedSuccessfully'));
             } else {
-                addService(data);
+                await addServiceAsync(data);
                 toastSuccess(t('createdSuccessfully'));
             }
             closeModals();
@@ -616,11 +633,11 @@
         if (action === "delete") {
             confirmDialog({
                 title: t('confirm'),
-                text: t('confirmDeleteService') || t('confirmDelete'),
+                text: t('confirmDelete') || 'Are you sure you want to delete?',
                 icon: 'warning',
-            }).then((ok) => {
+            }).then(async (ok) => {
                 if (!ok) return;
-                const deleted = deleteService(id);
+                const deleted = await deleteServiceAsync(id);
                 if (!deleted) {
                     toastError(t('deleteFailed'));
                     return;

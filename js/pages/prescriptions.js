@@ -5,7 +5,23 @@
   function addPrescription(p) { return App.Services.Data.addPrescription(p); }
   function updatePrescription(id, updates) { return App.Services.Data.updatePrescription(id, updates); }
   function deletePrescription(id) { return App.Services.Data.deletePrescription(id); }
-  
+  function getDataAsync() { return App.Services.DataAsync || null; }
+
+  async function addPrescriptionAsync(p) {
+    const api = getDataAsync();
+    return api ? api.addPrescription(p) : addPrescription(p);
+  }
+
+  async function updatePrescriptionAsync(id, updates) {
+    const api = getDataAsync();
+    return api ? api.updatePrescription(id, updates) : updatePrescription(id, updates);
+  }
+
+  async function deletePrescriptionAsync(id) {
+    const api = getDataAsync();
+    return api ? api.deletePrescription(id) : deletePrescription(id);
+  }
+
   function getPatients() { return App.Services.Data.getPatients(); }
   function getDoctors() { return App.Services.Data.getDoctors(); }
   function getPatient(id) { return App.Services.Data.getPatient(id); }
@@ -566,7 +582,7 @@
       return prescriptions.filter((p) => {
         const patient = getPatient(p.patientId);
         const doctor = getDoctor(p.doctorId);
-        const matchesSearch =
+        const matchesSearch = 
           String(p.medications || '').toLowerCase().includes(query) ||
           (patient ? String(patient.fullName || '').toLowerCase().includes(query) : false) ||
           (doctor ? String(doctor.name || '').toLowerCase().includes(query) : false);
@@ -672,7 +688,7 @@
     });
 
     // Save Add
-    container.querySelector('#save-add-btn')?.addEventListener('click', () => {
+    container.querySelector('#save-add-btn')?.addEventListener('click', async () => {
         const medications = container.querySelector('#add-medications').value;
         const dosage = container.querySelector('#add-dosage').value;
         const patientId = container.querySelector('#add-patient-id').value;
@@ -680,7 +696,7 @@
         const date = container.querySelector('#add-date').value;
 
         if (medications && patientId && doctorId && date) {
-            addPrescription({ medications, dosage, patientId, doctorId, date });
+            await addPrescriptionAsync({ medications, dosage, patientId, doctorId, date });
             closeModals();
             updateContent(container);
             toastSuccess(t('createdSuccessfully'));
@@ -690,7 +706,7 @@
     });
 
     // Save Edit
-    container.querySelector('#save-edit-btn')?.addEventListener('click', () => {
+    container.querySelector('#save-edit-btn')?.addEventListener('click', async () => {
         const id = container.querySelector('#edit-id').value;
         const medications = container.querySelector('#edit-medications').value;
         const dosage = container.querySelector('#edit-dosage').value;
@@ -699,7 +715,7 @@
         const date = container.querySelector('#edit-date').value;
 
         if (id && medications && patientId && doctorId && date) {
-            updatePrescription(parseInt(id), { medications, dosage, patientId, doctorId, date });
+            await updatePrescriptionAsync(id, { medications, dosage, patientId, doctorId, date });
             closeModals();
             updateContent(container);
             toastSuccess(t('updatedSuccessfully'));
@@ -821,9 +837,9 @@
                 title: t('confirm'),
                 text: t('confirmDeletePrescription') || t('confirmDelete'),
                 icon: 'warning',
-            }).then((ok) => {
+            }).then(async (ok) => {
                 if (!ok) return;
-                const deleted = deletePrescription(id);
+                const deleted = await deletePrescriptionAsync(id);
                 if (!deleted) {
                     toastError(t('deleteFailed'));
                     return;

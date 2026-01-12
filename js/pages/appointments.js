@@ -19,6 +19,23 @@
   function toastError(message) { return App.Services.Utils.toastError(message); }
   function confirmDialog(options) { return App.Services.Utils.confirmDialog(options); }
 
+  function getDataAsync() { return App.Services.DataAsync || null; }
+
+  async function addAppointmentAsync(a) {
+    const api = getDataAsync();
+    return api ? api.addAppointment(a) : addAppointment(a);
+  }
+
+  async function updateAppointmentAsync(id, updates) {
+    const api = getDataAsync();
+    return api ? api.updateAppointment(id, updates) : updateAppointment(id, updates);
+  }
+
+  async function deleteAppointmentAsync(id) {
+    const api = getDataAsync();
+    return api ? api.deleteAppointment(id) : deleteAppointment(id);
+  }
+
   let appointmentsState = {
     search: "",
     sortKey: "date",
@@ -490,23 +507,23 @@
     // Form submit
     const form = container.querySelector("#appointment-form");
     if (form) {
-        form.addEventListener("submit", (e) => {
+        form.addEventListener("submit", async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
-            const appointment = {
-                date: formData.get("date"),
-                time: formData.get("time"),
-                patientId: formData.get("patientId"),
-                doctorId: formData.get("doctorId"),
-                serviceId: formData.get("serviceId"),
-                status: formData.get("status")
-            };
+            const appointment = Object.fromEntries(formData.entries());
+            
+            appointment.date = form.querySelector('[name="date"]').value;
+            appointment.time = form.querySelector('[name="time"]').value;
+            appointment.patientId = form.querySelector('[name="patientId"]').value;
+            appointment.doctorId = form.querySelector('[name="doctorId"]').value;
+            appointment.serviceId = form.querySelector('[name="serviceId"]').value;
+            appointment.status = form.querySelector('[name="status"]').value;
 
             if (appointmentsState.editingId) {
-                updateAppointment(appointmentsState.editingId, appointment);
+                await updateAppointmentAsync(appointmentsState.editingId, appointment);
                 toastSuccess(t('updatedSuccessfully'));
             } else {
-                addAppointment(appointment);
+                await addAppointmentAsync(appointment);
                 toastSuccess(t('createdSuccessfully'));
             }
             closeModals();
@@ -717,9 +734,9 @@
                 title: t('confirm'),
                 text: t('confirmDeleteAppointment') || t('confirmDelete'),
                 icon: 'warning',
-            }).then((ok) => {
+            }).then(async (ok) => {
                 if (!ok) return;
-                const deleted = deleteAppointment(id);
+                const deleted = await deleteAppointmentAsync(id);
                 if (!deleted) {
                     toastError(t('deleteFailed'));
                     return;

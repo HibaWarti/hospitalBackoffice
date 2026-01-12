@@ -14,6 +14,23 @@ function toastError(message) { return App.Services.Utils.toastError(message); }
 function confirmDialog(options) { return App.Services.Utils.confirmDialog(options); }
 function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
 
+function getDataAsync() { return App.Services.DataAsync || null; }
+
+async function addPatientAsync(p) {
+  const api = getDataAsync();
+  return api ? api.addPatient(p) : addPatient(p);
+}
+
+async function updatePatientAsync(id, updates) {
+  const api = getDataAsync();
+  return api ? api.updatePatient(id, updates) : updatePatient(id, updates);
+}
+
+async function deletePatientAsync(id) {
+  const api = getDataAsync();
+  return api ? api.deletePatient(id) : deletePatient(id);
+}
+
 let patientsState = {
   search: "",
   sortKey: null,
@@ -570,16 +587,16 @@ function attachListeners(container) {
   container.querySelector("#patient-details-close-x")?.addEventListener("click", closeModals);
 
   // Form Submit
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     
     if (data.id) {
-      updatePatient(data.id, data);
+      await updatePatientAsync(data.id, data);
       toastSuccess(t('updatedSuccessfully'));
     } else {
-      addPatient({ ...data, registrationDate: new Date().toISOString().split('T')[0] });
+      await addPatientAsync({ ...data, registrationDate: new Date().toISOString().split('T')[0] });
       toastSuccess(t('createdSuccessfully'));
     }
     
@@ -661,9 +678,9 @@ function attachListeners(container) {
         title: t('confirm'),
         text: t('confirmDelete'),
         icon: 'warning',
-      }).then((ok) => {
+      }).then(async (ok) => {
         if (!ok) return;
-        const deleted = deletePatient(id);
+        const deleted = await deletePatientAsync(id);
         if (!deleted) {
           toastError(t('deleteFailed'));
           return;
