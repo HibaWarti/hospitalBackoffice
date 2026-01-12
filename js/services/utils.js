@@ -254,15 +254,54 @@ function exportElementToPDF(element, filename, options) {
 
   if (!opts.raw) {
     const wrapper = document.createElement('div');
+    wrapper.className = 'pdf-export-root';
     wrapper.style.position = 'absolute';
     wrapper.style.left = '-9999px';
     wrapper.style.top = '0';
     wrapper.style.width = '800px';
     wrapper.style.padding = '56px';
-    wrapper.style.background = 'white';
-    wrapper.style.color = 'black';
+    wrapper.style.background = '#ffffff';
+    wrapper.style.color = '#000000';
     wrapper.style.fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"';
     wrapper.dir = document.documentElement.dir || 'ltr';
+
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .pdf-export-root, .pdf-export-root * {
+        box-sizing: border-box;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        text-shadow: none !important;
+        filter: none !important;
+      }
+      .pdf-export-root { color: #000000; }
+      .pdf-export-root * { color: #000000 !important; opacity: 1 !important; }
+      .pdf-export-root label,
+      .pdf-export-root .text-muted-foreground {
+        color: #374151 !important;
+      }
+      .pdf-export-root h1,
+      .pdf-export-root h2,
+      .pdf-export-root h3 {
+        color: #000000 !important;
+      }
+      .pdf-export-root .bg-background,
+      .pdf-export-root .bg-card,
+      .pdf-export-root .bg-muted,
+      .pdf-export-root .bg-muted\/20,
+      .pdf-export-root .glass {
+        background: transparent !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+      }
+      .pdf-export-root .border,
+      .pdf-export-root .border-border,
+      .pdf-export-root .border-input {
+        border-color: #e5e7eb !important;
+      }
+      .pdf-export-root .grid { display: grid !important; }
+    `;
+    wrapper.appendChild(style);
 
     const detectedTitle = (opts.title && String(opts.title).trim())
       || element?.getAttribute?.('data-pdf-title')
@@ -328,9 +367,10 @@ function exportElementToPDF(element, filename, options) {
   }
   
   return html2canvas(target, {
-    scale: 2,
+    scale: 3,
     useCORS: true,
     logging: false,
+    letterRendering: true,
     backgroundColor: '#ffffff',
     ignoreElements: (element) => {
         // Ignore buttons, close icons, and elements explicitly marked
@@ -348,20 +388,21 @@ function exportElementToPDF(element, filename, options) {
       format: 'a4'
     });
     
-    const imgWidth = 210; 
-    const pageHeight = 297; 
+    const margin = 10;
+    const imgWidth = 210 - (margin * 2);
+    const pageHeight = 297 - (margin * 2);
     const imgHeight = canvas.height * imgWidth / canvas.width;
     
     let heightLeft = imgHeight;
-    let position = 0;
+    let position = margin;
     
-    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    doc.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, undefined, 'NONE');
     heightLeft -= pageHeight;
     
     while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
+      position = margin - (imgHeight - heightLeft);
       doc.addPage();
-      doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      doc.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight, undefined, 'NONE');
       heightLeft -= pageHeight;
     }
     

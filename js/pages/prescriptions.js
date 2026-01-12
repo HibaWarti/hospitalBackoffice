@@ -497,6 +497,13 @@
         });
     });
 
+    container.querySelectorAll('[data-action="close-modal"]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeModals();
+        });
+    });
+
     // Menu logic
     const closeMenusHandler = () => {
         if (prescriptionsState.activeMenuId) {

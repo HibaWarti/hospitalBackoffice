@@ -37,8 +37,7 @@
     pageSize: 10,
     isModalOpen: false,
     editingId: null,
-    viewingId: null,
-    filterInitial: ""
+    viewingId: null
   };
 
   function render() {
@@ -68,14 +67,6 @@
     const gapClass = isRTL ? 'ml-2' : 'mr-2';
     const prevIcon = isRTL ? 'chevron-right' : 'chevron-left';
     const nextIcon = isRTL ? 'chevron-left' : 'chevron-right';
-    const initials = [...new Set(allServices.map(s => (s.name || '').trim().charAt(0).toUpperCase()).filter(Boolean))].sort();
-
-    const initialsOptions = [`<option value="">${t("all")}</option>`]
-      .concat(initials.map((ch) => {
-        const selected = String(servicesState.filterInitial) === String(ch) ? 'selected' : '';
-        return `<option value="${ch}" ${selected}>${ch}</option>`;
-      }))
-      .join('');
     
     // Filter
     let filteredServices = allServices.filter(service => {
@@ -84,9 +75,7 @@
         service.name.toLowerCase().includes(searchLower) ||
         (service.description && service.description.toLowerCase().includes(searchLower))
       );
-      const first = (service.name || '').trim().charAt(0).toUpperCase();
-      const matchesInitial = servicesState.filterInitial ? first === servicesState.filterInitial : true;
-      return matchesSearch && matchesInitial;
+      return matchesSearch;
     });
 
     // Sort
@@ -209,9 +198,6 @@
                   class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 />
             </div>
-            <select id="name-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              ${initialsOptions}
-            </select>
           </div>
         <div class="flex gap-2">
             <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-3">
@@ -364,22 +350,11 @@
             renderPage();
         });
     }
-    
-    // Initial letter filter
-    const nameFilter = container.querySelector('#name-filter');
-    if (nameFilter) {
-        nameFilter.addEventListener('change', (e) => {
-            servicesState.filterInitial = e.target.value;
-            servicesState.page = 1;
-            renderPage();
-        });
-    }
 
     const resetBtn = container.querySelector('#reset-filters-btn');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
             servicesState.search = "";
-            servicesState.filterInitial = "";
             servicesState.sortKey = null;
             servicesState.sortOrder = "asc";
             servicesState.page = 1;
@@ -472,9 +447,7 @@
                     service.name.toLowerCase().includes(searchLower) ||
                     (service.description && service.description.toLowerCase().includes(searchLower))
                 );
-                const first = (service.name || '').trim().charAt(0).toUpperCase();
-                const matchesInitial = servicesState.filterInitial ? first === servicesState.filterInitial : true;
-                return matchesSearch && matchesInitial;
+                return matchesSearch;
             });
 
             if (servicesState.sortKey) {

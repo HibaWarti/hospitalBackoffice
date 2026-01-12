@@ -240,7 +240,7 @@ function renderShell(user) {
             )
             .join("")}
         </nav>
-        <div class="p-4 border-t border-sidebar-border">
+        <div class="mt-auto p-4 border-t border-sidebar-border">
           <button id="logout-btn" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground hover:text-destructive">
             <i data-lucide="log-out" class="w-5 h-5"></i>
             <span>${t("logout")}</span>
@@ -332,11 +332,32 @@ function renderShell(user) {
   const mainContent = document.getElementById("main-content");
   const sidebar = document.getElementById("sidebar");
   const sidebarToggle = document.getElementById("sidebar-toggle");
+  const globalOverlay = document.getElementById("global-overlay");
   const langButton = document.getElementById("lang-button");
   const langMenu = document.getElementById("lang-menu");
   const themeToggle = document.getElementById("theme-toggle");
   const header = document.querySelector("header");
   const sidebarBrand = document.getElementById("sidebar-brand");
+
+  const isMobileViewport = () => window.innerWidth < 768;
+
+  const closeMobileSidebar = () => {
+    if (!sidebar) return;
+    sidebar.classList.add("hidden");
+    sidebar.classList.remove("fixed", "inset-0", "z-[1002]", "w-full");
+    globalOverlay?.classList.add("hidden");
+    document.body.style.overflow = "";
+    updateHeaderLayout();
+  };
+
+  const openMobileSidebar = () => {
+    if (!sidebar) return;
+    sidebar.classList.remove("hidden");
+    sidebar.classList.add("fixed", "inset-0", "z-[1002]", "w-full");
+    globalOverlay?.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+    updateHeaderLayout();
+  };
 
   function updateThemeIcon() {
     if (!themeToggle) return;
@@ -348,6 +369,16 @@ function renderShell(user) {
 
   function updateHeaderLayout() {
     const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      if (!sidebar.classList.contains("fixed")) {
+        sidebar.classList.add("hidden");
+      }
+    }
+    if (!isMobile) {
+      sidebar.classList.remove("fixed", "inset-0", "z-[1002]", "w-full");
+      globalOverlay?.classList.add("hidden");
+      document.body.style.overflow = "";
+    }
     const sidebarRect = sidebar.getBoundingClientRect();
     const sidebarVisibleDesktop = !isMobile && !sidebar.classList.contains("md:hidden") && sidebarRect.width > 0;
     const isRTL = document.documentElement.dir === 'rtl';
@@ -380,32 +411,37 @@ function renderShell(user) {
     e.preventDefault();
     const key = link.getAttribute("data-key");
     navigateTo(key);
+
+    if (isMobileViewport()) {
+      closeMobileSidebar();
+    }
   });
 
   // Mobile Sidebar
   sidebarToggle?.addEventListener("click", () => {
-    const isMobile = window.innerWidth < 768;
+    const isMobile = isMobileViewport();
     if (isMobile) {
-      sidebar.classList.toggle("hidden");
-      sidebar.classList.toggle("fixed");
-      sidebar.classList.toggle("inset-0");
-      sidebar.classList.toggle("z-[1002]");
-    } else {
-      sidebar.classList.toggle("md:hidden");
+      if (sidebar.classList.contains("hidden")) {
+        openMobileSidebar();
+      } else {
+        closeMobileSidebar();
+      }
+      return;
     }
+    sidebar.classList.toggle("md:hidden");
     updateHeaderLayout();
   });
 
   const sidebarClose = document.getElementById("sidebar-close");
   sidebarClose?.addEventListener("click", () => {
-    const isMobile = window.innerWidth < 768;
-    if (isMobile) {
-      sidebar.classList.add("hidden");
-      sidebar.classList.remove("fixed", "inset-0", "z-[1002]");
-    } else {
-      sidebar.classList.add("md:hidden");
-    }
+    const isMobile = isMobileViewport();
+    if (isMobile) return closeMobileSidebar();
+    sidebar.classList.add("md:hidden");
     updateHeaderLayout();
+  });
+
+  globalOverlay?.addEventListener("click", () => {
+    if (isMobileViewport()) closeMobileSidebar();
   });
 
   // Logout
