@@ -321,7 +321,7 @@
           </div>
         </div>
 
-        <div class="rounded-lg border border-border bg-card overflow-visible shadow-sm">
+        <div class="glass rounded-2xl shadow-glow overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-sm" dir="${isRTL ? 'rtl' : 'ltr'}">
               <thead class="bg-secondary/50 border-b border-border">

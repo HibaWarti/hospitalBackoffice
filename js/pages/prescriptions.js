@@ -208,7 +208,7 @@
             </div>
         </div>
 
-        <div class="rounded-md border border-border bg-card text-card-foreground shadow-sm overflow-hidden">
+        <div class="glass rounded-2xl shadow-glow overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-sm" dir="${isRTL ? 'rtl' : 'ltr'}">
               <thead class="bg-muted/50 text-muted-foreground">
