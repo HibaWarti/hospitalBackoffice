@@ -196,6 +196,7 @@ function generateAppointments(patients, doctors, services) {
         serviceId: service ? service.id : faker.helpers.arrayElement(services).id,
         status: faker.helpers.arrayElement(statuses),
       });
+
     }
   }
 
@@ -203,6 +204,7 @@ function generateAppointments(patients, doctors, services) {
 }
 
 function generatePrescriptions(patients, doctors) {
+
   const medications = [
     "Paracetamol",
     "Ibuprofen",
@@ -214,7 +216,7 @@ function generatePrescriptions(patients, doctors) {
     "Metoprolol",
   ];
 
-  return Array.from({ length: 200 }, (_, index) => ({
+  return Array.from({ length: 500 }, (_, index) => ({
     id: `prescription-${index + 1}`,
     patientId: faker.helpers.arrayElement(patients).id,
     doctorId: faker.helpers.arrayElement(doctors).id,
@@ -254,11 +256,13 @@ function initializeData() {
     const doctors = JSON.parse(localStorage.getItem(STORAGE_KEYS.doctors) || '[]');
     const patients = JSON.parse(localStorage.getItem(STORAGE_KEYS.patients) || '[]');
     const services = JSON.parse(localStorage.getItem(STORAGE_KEYS.services) || '[]');
+    const prescriptions = JSON.parse(localStorage.getItem(STORAGE_KEYS.prescriptions) || '[]');
     
     const needsRefresh = 
       (doctors.length > 0 && (!doctors[0].name || doctors[0].name === "Doctor 1")) || 
       (patients.length > 0 && !patients[0].fullName) ||
-      (services.length > 0 && services[0].description && services[0].description.includes("Lorem ipsum"));
+      (services.length > 0 && services[0].description && services[0].description.includes("Lorem ipsum")) ||
+      (prescriptions.length > 0 && prescriptions.length < 100);
 
     if (needsRefresh) {
         console.log("Detecting old data schema, refreshing data...");
@@ -339,6 +343,47 @@ function resetData() {
   initializeData();
   window.location.reload();
 }
+
+function simulateAsync(value, delayMs = 150) {
+  return new Promise((resolve) => {
+    setTimeout(() => resolve(value), delayMs);
+  });
+}
+
+const DataAsync = {
+  getPatients: (delayMs) => simulateAsync(getPatients(), delayMs),
+  getPatient: (id, delayMs) => simulateAsync(getPatient(id), delayMs),
+  addPatient: (patient, delayMs) => simulateAsync(addPatient(patient), delayMs),
+  updatePatient: (id, updates, delayMs) => simulateAsync(updatePatient(id, updates), delayMs),
+  deletePatient: (id, delayMs) => simulateAsync(deletePatient(id), delayMs),
+
+  getDoctors: (delayMs) => simulateAsync(getDoctors(), delayMs),
+  getDoctor: (id, delayMs) => simulateAsync(getDoctor(id), delayMs),
+  addDoctor: (doctor, delayMs) => simulateAsync(addDoctor(doctor), delayMs),
+  updateDoctor: (id, updates, delayMs) => simulateAsync(updateDoctor(id, updates), delayMs),
+  deleteDoctor: (id, delayMs) => simulateAsync(deleteDoctor(id), delayMs),
+
+  getServices: (delayMs) => simulateAsync(getServices(), delayMs),
+  getService: (id, delayMs) => simulateAsync(getService(id), delayMs),
+  addService: (service, delayMs) => simulateAsync(addService(service), delayMs),
+  updateService: (id, updates, delayMs) => simulateAsync(updateService(id, updates), delayMs),
+  deleteService: (id, delayMs) => simulateAsync(deleteService(id), delayMs),
+
+  getAppointments: (delayMs) => simulateAsync(getAppointments(), delayMs),
+  getAppointment: (id, delayMs) => simulateAsync(getAppointment(id), delayMs),
+  addAppointment: (appointment, delayMs) => simulateAsync(addAppointment(appointment), delayMs),
+  updateAppointment: (id, updates, delayMs) => simulateAsync(updateAppointment(id, updates), delayMs),
+  deleteAppointment: (id, delayMs) => simulateAsync(deleteAppointment(id), delayMs),
+
+  getPrescriptions: (delayMs) => simulateAsync(getPrescriptions(), delayMs),
+  getPrescription: (id, delayMs) => simulateAsync(getPrescription(id), delayMs),
+  addPrescription: (prescription, delayMs) => simulateAsync(addPrescription(prescription), delayMs),
+  updatePrescription: (id, updates, delayMs) => simulateAsync(updatePrescription(id, updates), delayMs),
+  deletePrescription: (id, delayMs) => simulateAsync(deletePrescription(id), delayMs),
+
+  resetData: (delayMs) => simulateAsync(resetData(), delayMs),
+};
+
 window.App = window.App || {};
 App.Services = App.Services || {};
 App.Services.Data = {
@@ -349,4 +394,6 @@ App.Services.Data = {
   getPrescriptions, getPrescription, addPrescription, updatePrescription, deletePrescription,
   resetData
 };
+App.Services.DataAsync = DataAsync;
+
 })();

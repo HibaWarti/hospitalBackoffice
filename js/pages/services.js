@@ -52,6 +52,13 @@
     const prevIcon = isRTL ? 'chevron-right' : 'chevron-left';
     const nextIcon = isRTL ? 'chevron-left' : 'chevron-right';
     const initials = [...new Set(allServices.map(s => (s.name || '').trim().charAt(0).toUpperCase()).filter(Boolean))].sort();
+
+    const initialsOptions = [`<option value="">${t("all")}</option>`]
+      .concat(initials.map((ch) => {
+        const selected = String(servicesState.filterInitial) === String(ch) ? 'selected' : '';
+        return `<option value="${ch}" ${selected}>${ch}</option>`;
+      }))
+      .join('');
     
     // Filter
     let filteredServices = allServices.filter(service => {
@@ -185,6 +192,9 @@
                   class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 />
             </div>
+            <select id="name-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              ${initialsOptions}
+            </select>
           </div>
         <div class="flex gap-2">
             <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-3">
@@ -290,19 +300,37 @@
     let activeMenuAnchor = null;
     let activeMenuEl = null;
 
+    const getFixedContainingBlock = (el) => {
+      let p = el && el.parentElement ? el.parentElement : null;
+      while (p) {
+        const cs = window.getComputedStyle(p);
+        const hasTransform = cs.transform && cs.transform !== 'none';
+        const hasFilter = cs.filter && cs.filter !== 'none';
+        const hasBackdrop = cs.backdropFilter && cs.backdropFilter !== 'none';
+        const hasPerspective = cs.perspective && cs.perspective !== 'none';
+        if (hasTransform || hasFilter || hasBackdrop || hasPerspective) return p;
+        p = p.parentElement;
+      }
+      return null;
+    };
+
     const repositionActiveMenu = () => {
       if (!activeMenuAnchor || !activeMenuEl || activeMenuEl.classList.contains("hidden")) return;
       const btnRect = activeMenuAnchor.getBoundingClientRect();
       const isRTL = document.documentElement.dir === 'rtl';
+      const cb = getFixedContainingBlock(activeMenuEl);
+      const cbRect = cb ? cb.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+      const viewportW = cb ? cbRect.width : window.innerWidth;
+      const viewportH = cb ? cbRect.height : window.innerHeight;
       const mw = activeMenuEl.offsetWidth || 192;
       const mh = activeMenuEl.offsetHeight || 120;
-      let top = btnRect.bottom + 8;
-      if (top + mh > window.innerHeight) {
-        top = btnRect.top - mh - 8;
+      let top = btnRect.bottom + 8 - cbRect.top;
+      if (top + mh > viewportH) {
+        top = btnRect.top - mh - 8 - cbRect.top;
       }
-      let left = isRTL ? btnRect.left : btnRect.right - mw;
+      let left = (isRTL ? btnRect.left : btnRect.right - mw) - cbRect.left;
       if (left < 8) left = 8;
-      if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+      if (left + mw > viewportW - 8) left = viewportW - mw - 8;
       activeMenuEl.style.top = `${top}px`;
       activeMenuEl.style.left = `${left}px`;
     };
@@ -553,21 +581,25 @@
             if (menu) {
                 const btnRect = btn.getBoundingClientRect();
                 const isRTL = document.documentElement.dir === 'rtl';
+                const cb = getFixedContainingBlock(menu);
+                const cbRect = cb ? cb.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+                const viewportW = cb ? cbRect.width : window.innerWidth;
+                const viewportH = cb ? cbRect.height : window.innerHeight;
                 menu.classList.remove("hidden");
                 menu.style.visibility = "hidden";
-                menu.style.top = `${btnRect.bottom + 8}px`;
-                menu.style.left = `${isRTL ? btnRect.left : btnRect.right - 192}px`;
+                menu.style.top = `${btnRect.bottom + 8 - cbRect.top}px`;
+                menu.style.left = `${(isRTL ? btnRect.left : btnRect.right - 192) - cbRect.left}px`;
                 
                 requestAnimationFrame(() => {
                     const mw = menu.offsetWidth;
                     const mh = menu.offsetHeight;
-                    let top = btnRect.bottom + 8;
-                    if (top + mh > window.innerHeight) {
-                        top = btnRect.top - mh - 8;
+                    let top = btnRect.bottom + 8 - cbRect.top;
+                    if (top + mh > viewportH) {
+                        top = btnRect.top - mh - 8 - cbRect.top;
                     }
-                    let left = isRTL ? btnRect.left : btnRect.right - mw;
+                    let left = (isRTL ? btnRect.left : btnRect.right - mw) - cbRect.left;
                     if (left < 8) left = 8;
-                    if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+                    if (left + mw > viewportW - 8) left = viewportW - mw - 8;
                     menu.style.top = `${top}px`;
                     menu.style.left = `${left}px`;
                     menu.style.visibility = "visible";

@@ -83,6 +83,13 @@
         };
     });
 
+    const doctorOptions = [`<option value="">${t('doctor')}</option>`]
+      .concat(doctors.map((d) => {
+        const selected = String(appointmentsState.filterDoctorId) === String(d.id) ? 'selected' : '';
+        return `<option value="${d.id}" ${selected}>${d.firstName} ${d.lastName}</option>`;
+      }))
+      .join('');
+
     // Filter
     let filteredAppointments = enrichedAppointments.filter(app => {
       const searchLower = appointmentsState.search.toLowerCase();
@@ -290,6 +297,9 @@
               class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               placeholder="${t("date") || 'Date'}"
             >
+            <select id="doctor-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+              ${doctorOptions}
+            </select>
             <select id="status-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
               <option value="">${t("status")}</option>
               <option value="scheduled">${t("scheduled")}</option>
@@ -417,19 +427,37 @@
     let activeMenuAnchor = null;
     let activeMenuEl = null;
 
+    const getFixedContainingBlock = (el) => {
+      let p = el && el.parentElement ? el.parentElement : null;
+      while (p) {
+        const cs = window.getComputedStyle(p);
+        const hasTransform = cs.transform && cs.transform !== 'none';
+        const hasFilter = cs.filter && cs.filter !== 'none';
+        const hasBackdrop = cs.backdropFilter && cs.backdropFilter !== 'none';
+        const hasPerspective = cs.perspective && cs.perspective !== 'none';
+        if (hasTransform || hasFilter || hasBackdrop || hasPerspective) return p;
+        p = p.parentElement;
+      }
+      return null;
+    };
+
     const repositionActiveMenu = () => {
       if (!activeMenuAnchor || !activeMenuEl || activeMenuEl.classList.contains("hidden")) return;
       const btnRect = activeMenuAnchor.getBoundingClientRect();
       const isRTL = document.documentElement.dir === 'rtl';
+      const cb = getFixedContainingBlock(activeMenuEl);
+      const cbRect = cb ? cb.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+      const viewportW = cb ? cbRect.width : window.innerWidth;
+      const viewportH = cb ? cbRect.height : window.innerHeight;
       const mw = activeMenuEl.offsetWidth || 192;
       const mh = activeMenuEl.offsetHeight || 120;
-      let top = btnRect.bottom + 8;
-      if (top + mh > window.innerHeight) {
-        top = btnRect.top - mh - 8;
+      let top = btnRect.bottom + 8 - cbRect.top;
+      if (top + mh > viewportH) {
+        top = btnRect.top - mh - 8 - cbRect.top;
       }
-      let left = isRTL ? btnRect.left : btnRect.right - mw;
+      let left = (isRTL ? btnRect.left : btnRect.right - mw) - cbRect.left;
       if (left < 8) left = 8;
-      if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+      if (left + mw > viewportW - 8) left = viewportW - mw - 8;
       activeMenuEl.style.top = `${top}px`;
       activeMenuEl.style.left = `${left}px`;
     };

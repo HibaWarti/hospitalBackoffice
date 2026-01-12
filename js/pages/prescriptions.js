@@ -46,13 +46,22 @@
 
   function updateContent(container) {
     container.innerHTML = generateHTML();
+    lucide.createIcons();
     attachListeners(container);
   }
 
   function generateHTML() {
     const prescriptions = getPrescriptions();
+    const doctors = getDoctors();
     const isRTL = document.documentElement.dir === 'rtl';
     const gapClass = isRTL ? 'ml-2' : 'mr-2';
+
+    const doctorOptions = [`<option value="">${t('doctor')}</option>`]
+      .concat(doctors.map((d) => {
+        const selected = String(prescriptionsState.filterDoctorId) === String(d.id) ? 'selected' : '';
+        return `<option value="${d.id}" ${selected}>${d.name || `${d.firstName} ${d.lastName}`}</option>`;
+      }))
+      .join('');
 
     const renderSortIcon = (key) => {
       if (prescriptionsState.sortKey !== key) return '<i data-lucide="arrow-up-down" class="w-4 h-4 ms-1 opacity-50"></i>';
@@ -101,9 +110,17 @@
 
     // Pagination
     const totalPages = Math.ceil(filtered.length / prescriptionsState.itemsPerPage);
+    if (totalPages > 0 && prescriptionsState.page > totalPages) {
+      prescriptionsState.page = totalPages;
+    }
+    if (totalPages === 0) {
+      prescriptionsState.page = 1;
+    }
     const start = (prescriptionsState.page - 1) * prescriptionsState.itemsPerPage;
     const end = start + prescriptionsState.itemsPerPage;
     const paginated = filtered.slice(start, end);
+    const showingFrom = filtered.length === 0 ? 0 : start + 1;
+    const showingTo = filtered.length === 0 ? 0 : Math.min(end, filtered.length);
 
     let pagesToShow = [];
     if (totalPages <= 7) {
@@ -134,7 +151,7 @@
     const paginationHTML = totalPages > 1 ? `
       <div class="space-y-2 pt-4 border-t border-border">
           <div class="text-sm text-muted-foreground text-center">
-              ${t('showing')} ${start + 1} ${t('to')} ${Math.min(end, filtered.length)} ${t('of')} ${filtered.length}
+              ${t('showing')} ${showingFrom} ${t('to')} ${showingTo} ${t('of')} ${filtered.length}
           </div>
           <div class="flex items-center justify-center gap-2">
               <button data-page="prev" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 w-8" ${prescriptionsState.page === 1 ? 'disabled' : ''}>
@@ -177,6 +194,9 @@
                             placeholder="${t("date") || 'Date'}"
                         >
                     </div>
+                    <select id="doctor-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                      ${doctorOptions}
+                    </select>
                 </div>
 
                 <div class="flex gap-2">
@@ -432,17 +452,25 @@
   }
 
   function attachListeners(container) {
-    if (window.lucide) {
-      window.lucide.createIcons({
-        root: container
-      });
-    }
+    const getFixedContainingBlock = (el) => {
+      let p = el && el.parentElement ? el.parentElement : null;
+      while (p) {
+        const cs = window.getComputedStyle(p);
+        const hasTransform = cs.transform && cs.transform !== 'none';
+        const hasFilter = cs.filter && cs.filter !== 'none';
+        const hasBackdrop = cs.backdropFilter && cs.backdropFilter !== 'none';
+        const hasPerspective = cs.perspective && cs.perspective !== 'none';
+        if (hasTransform || hasFilter || hasBackdrop || hasPerspective) return p;
+        p = p.parentElement;
+      }
+      return null;
+    };
 
-    // Modal Utilities
+    // Close modals
     const closeModals = () => {
-        container.querySelectorAll('.fixed.inset-0').forEach(el => {
-            el.classList.add('hidden');
-            el.classList.remove('flex');
+        container.querySelectorAll('.global-overlay').forEach(modal => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
         });
     };
 
@@ -451,11 +479,6 @@
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) closeModals();
         });
-    });
-    
-    // Close modal buttons
-    container.querySelectorAll('button[data-action="close-modal"]').forEach(btn => {
-        btn.addEventListener('click', closeModals);
     });
 
     // Menu logic
@@ -470,18 +493,23 @@
       if (!activeMenuAnchor || !activeMenuEl || activeMenuEl.classList.contains("hidden")) return;
       const btnRect = activeMenuAnchor.getBoundingClientRect();
       const isRTL = document.documentElement.dir === 'rtl';
+      const cb = getFixedContainingBlock(activeMenuEl);
+      const cbRect = cb ? cb.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+      const viewportW = cb ? cbRect.width : window.innerWidth;
+      const viewportH = cb ? cbRect.height : window.innerHeight;
       const mw = activeMenuEl.offsetWidth || 192;
       const mh = activeMenuEl.offsetHeight || 120;
-      let top = btnRect.bottom + 8;
-      if (top + mh > window.innerHeight) {
-        top = btnRect.top - mh - 8;
+      let top = btnRect.bottom + 8 - cbRect.top;
+      if (top + mh > viewportH) {
+        top = btnRect.top - mh - 8 - cbRect.top;
       }
-      let left = isRTL ? btnRect.left : btnRect.right - mw;
+      let left = (isRTL ? btnRect.left : btnRect.right - mw) - cbRect.left;
       if (left < 8) left = 8;
-      if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+      if (left + mw > viewportW - 8) left = viewportW - mw - 8;
       activeMenuEl.style.top = `${top}px`;
       activeMenuEl.style.left = `${left}px`;
     };
+
     window.addEventListener('scroll', closeMenusHandler, { capture: true, passive: true });
     window.addEventListener('resize', closeMenusHandler, { passive: true });
     window.addEventListener('resize', repositionActiveMenu, { passive: true });
@@ -510,6 +538,15 @@
       });
     }
 
+    const doctorFilter = container.querySelector('#doctor-filter');
+    if (doctorFilter) {
+      doctorFilter.addEventListener('change', (e) => {
+        prescriptionsState.filterDoctorId = e.target.value;
+        prescriptionsState.page = 1;
+        updateContent(container);
+      });
+    }
+
     const resetBtn = container.querySelector('#reset-filters-btn');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
@@ -522,6 +559,48 @@
             updateContent(container);
         });
     }
+
+    const getFilteredCount = () => {
+      const prescriptions = getPrescriptions();
+      const query = prescriptionsState.searchQuery.toLowerCase();
+      return prescriptions.filter((p) => {
+        const patient = getPatient(p.patientId);
+        const doctor = getDoctor(p.doctorId);
+        const matchesSearch =
+          String(p.medications || '').toLowerCase().includes(query) ||
+          (patient ? String(patient.fullName || '').toLowerCase().includes(query) : false) ||
+          (doctor ? String(doctor.name || '').toLowerCase().includes(query) : false);
+        const matchesDoctor = prescriptionsState.filterDoctorId ? p.doctorId === prescriptionsState.filterDoctorId : true;
+        const matchesDate = prescriptionsState.filterDate ? p.date === prescriptionsState.filterDate : true;
+        return matchesSearch && matchesDoctor && matchesDate;
+      }).length;
+    };
+
+    container.querySelectorAll('button[data-page]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const page = btn.getAttribute('data-page');
+        const total = getFilteredCount();
+        const totalPages = Math.ceil(total / prescriptionsState.itemsPerPage);
+
+        if (page === 'prev') {
+          if (prescriptionsState.page > 1) prescriptionsState.page -= 1;
+          updateContent(container);
+          return;
+        }
+
+        if (page === 'next') {
+          if (prescriptionsState.page < totalPages) prescriptionsState.page += 1;
+          updateContent(container);
+          return;
+        }
+
+        const n = parseInt(page, 10);
+        if (!isNaN(n)) {
+          prescriptionsState.page = n;
+          updateContent(container);
+        }
+      });
+    });
 
     // Sort
     container.querySelectorAll('th[data-sort]').forEach(th => {
@@ -654,21 +733,25 @@
         if (menu) {
           const btnRect = btn.getBoundingClientRect();
           const isRTL = document.documentElement.dir === 'rtl';
+          const cb = getFixedContainingBlock(menu);
+          const cbRect = cb ? cb.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+          const viewportW = cb ? cbRect.width : window.innerWidth;
+          const viewportH = cb ? cbRect.height : window.innerHeight;
           menu.classList.remove('hidden');
           menu.style.visibility = 'hidden';
-          menu.style.top = `${btnRect.bottom + 8}px`;
-          menu.style.left = `${isRTL ? btnRect.left : btnRect.right - 192}px`; // 192px ~ w-48
+          menu.style.top = `${btnRect.bottom + 8 - cbRect.top}px`;
+          menu.style.left = `${(isRTL ? btnRect.left : btnRect.right - 192) - cbRect.left}px`; // 192px ~ w-48
           // Measure then adjust for viewport overflow
           requestAnimationFrame(() => {
             const mw = menu.offsetWidth;
             const mh = menu.offsetHeight;
-            let top = btnRect.bottom + 8;
-            if (top + mh > window.innerHeight) {
-              top = btnRect.top - mh - 8;
+            let top = btnRect.bottom + 8 - cbRect.top;
+            if (top + mh > viewportH) {
+              top = btnRect.top - mh - 8 - cbRect.top;
             }
-            let left = isRTL ? btnRect.left : btnRect.right - mw;
+            let left = (isRTL ? btnRect.left : btnRect.right - mw) - cbRect.left;
             if (left < 8) left = 8;
-            if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+            if (left + mw > viewportW - 8) left = viewportW - mw - 8;
             menu.style.top = `${top}px`;
             menu.style.left = `${left}px`;
             menu.style.visibility = 'visible';

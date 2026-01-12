@@ -365,19 +365,36 @@ function attachListeners(container) {
   const modalTitle = container.querySelector("#patient-modal-title");
   let activeMenuAnchor = null;
   let activeMenuEl = null;
+  const getFixedContainingBlock = (el) => {
+    let p = el && el.parentElement ? el.parentElement : null;
+    while (p) {
+      const cs = window.getComputedStyle(p);
+      const hasTransform = cs.transform && cs.transform !== 'none';
+      const hasFilter = cs.filter && cs.filter !== 'none';
+      const hasBackdrop = cs.backdropFilter && cs.backdropFilter !== 'none';
+      const hasPerspective = cs.perspective && cs.perspective !== 'none';
+      if (hasTransform || hasFilter || hasBackdrop || hasPerspective) return p;
+      p = p.parentElement;
+    }
+    return null;
+  };
   const repositionActiveMenu = () => {
     if (!activeMenuAnchor || !activeMenuEl || activeMenuEl.classList.contains("hidden")) return;
     const btnRect = activeMenuAnchor.getBoundingClientRect();
     const isRTL = document.documentElement.dir === 'rtl';
+    const cb = getFixedContainingBlock(activeMenuEl);
+    const cbRect = cb ? cb.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+    const viewportW = cb ? cbRect.width : window.innerWidth;
+    const viewportH = cb ? cbRect.height : window.innerHeight;
     const mw = activeMenuEl.offsetWidth || 192;
     const mh = activeMenuEl.offsetHeight || 120;
-    let top = btnRect.bottom + 8;
-    if (top + mh > window.innerHeight) {
-      top = btnRect.top - mh - 8;
+    let top = btnRect.bottom + 8 - cbRect.top;
+    if (top + mh > viewportH) {
+      top = btnRect.top - mh - 8 - cbRect.top;
     }
-    let left = isRTL ? btnRect.left : btnRect.right - mw;
+    let left = (isRTL ? btnRect.left : btnRect.right - mw) - cbRect.left;
     if (left < 8) left = 8;
-    if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+    if (left + mw > viewportW - 8) left = viewportW - mw - 8;
     activeMenuEl.style.top = `${top}px`;
     activeMenuEl.style.left = `${left}px`;
   };
@@ -602,21 +619,25 @@ function attachListeners(container) {
       if (menu) {
         const btnRect = btn.getBoundingClientRect();
         const isRTL = document.documentElement.dir === 'rtl';
+        const cb = getFixedContainingBlock(menu);
+        const cbRect = cb ? cb.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+        const viewportW = cb ? cbRect.width : window.innerWidth;
+        const viewportH = cb ? cbRect.height : window.innerHeight;
         menu.classList.remove("hidden");
         menu.style.visibility = "hidden";
-        menu.style.top = `${btnRect.bottom + 8}px`;
-        menu.style.left = `${isRTL ? btnRect.left : btnRect.right - 192}px`; // 192px ~ w-48
+        menu.style.top = `${btnRect.bottom + 8 - cbRect.top}px`;
+        menu.style.left = `${(isRTL ? btnRect.left : btnRect.right - 192) - cbRect.left}px`; // 192px ~ w-48
         // Measure then adjust for viewport overflow
         requestAnimationFrame(() => {
           const mw = menu.offsetWidth;
           const mh = menu.offsetHeight;
-          let top = btnRect.bottom + 8;
-          if (top + mh > window.innerHeight) {
-            top = btnRect.top - mh - 8;
+          let top = btnRect.bottom + 8 - cbRect.top;
+          if (top + mh > viewportH) {
+            top = btnRect.top - mh - 8 - cbRect.top;
           }
-          let left = isRTL ? btnRect.left : btnRect.right - mw;
+          let left = (isRTL ? btnRect.left : btnRect.right - mw) - cbRect.left;
           if (left < 8) left = 8;
-          if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+          if (left + mw > viewportW - 8) left = viewportW - mw - 8;
           menu.style.top = `${top}px`;
           menu.style.left = `${left}px`;
           menu.style.visibility = "visible";

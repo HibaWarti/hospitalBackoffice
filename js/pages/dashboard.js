@@ -5,13 +5,25 @@ function getServices() { return App.Services.Data.getServices(); }
 function getAppointments() { return App.Services.Data.getAppointments(); }
 function getPrescriptions() { return App.Services.Data.getPrescriptions(); }
 
-function buildDashboardData() {
-  const patients = getPatients();
-  const doctors = getDoctors();
-  const services = getServices();
-  const appointments = getAppointments();
-  const prescriptions = getPrescriptions();
+ const dashboardCharts = {
+  patientsByService: null,
+  appointmentsByDay: null,
+  appointmentsEvolution: null,
+  appointmentsByStatus: null,
+  doctorsBySpecialty: null,
+ };
 
+ function destroyCharts() {
+  Object.keys(dashboardCharts).forEach((k) => {
+   const chart = dashboardCharts[k];
+   if (chart && typeof chart.destroy === "function") {
+    chart.destroy();
+   }
+   dashboardCharts[k] = null;
+  });
+ }
+
+function buildDashboardData({ patients, doctors, services, appointments, prescriptions }) {
   const stats = [
     { key: t("totalPatients"), value: patients.length, color: "bg-primary", icon: "users" },
     { key: t("totalDoctors"), value: doctors.length, color: "bg-accent", icon: "user-round" },
@@ -67,7 +79,47 @@ function buildDashboardData() {
 }
 
 function render() {
+  const container = document.createElement("div");
+  container.className = "space-y-6 animate-fade-in";
+  container.innerHTML = `<div class="text-muted-foreground">${t("loading") || "Loading..."}</div>`;
+
+  initDashboard(container);
+  return container;
+}
+
+async function initDashboard(container) {
   const currentLang = App.Services.I18n.getCurrentLang();
+
+  const dataApi = App.Services.DataAsync || null;
+  let patients = [];
+  let doctors = [];
+  let services = [];
+  let appointments = [];
+  let prescriptions = [];
+
+  if (dataApi) {
+    [patients, doctors, services, appointments, prescriptions] = await Promise.all([
+      dataApi.getPatients(),
+      dataApi.getDoctors(),
+      dataApi.getServices(),
+      dataApi.getAppointments(),
+      dataApi.getPrescriptions(),
+    ]);
+  } else {
+    patients = getPatients();
+    doctors = getDoctors();
+    services = getServices();
+    appointments = getAppointments();
+    prescriptions = getPrescriptions();
+  }
+
+  const baseData = { patients, doctors, services, appointments, prescriptions };
+  renderDashboard(container, baseData, currentLang);
+}
+
+function renderDashboard(container, baseData, currentLang) {
+  destroyCharts();
+
   const {
     stats,
     patientsByService,
@@ -76,10 +128,7 @@ function render() {
     appointmentsEvolution,
     doctorsBySpecialty,
     statusCounts,
-  } = buildDashboardData();
-
-  const container = document.createElement("div");
-  container.className = "space-y-6 animate-fade-in";
+  } = buildDashboardData(baseData);
 
   container.innerHTML = `
     <div>
@@ -160,6 +209,10 @@ function render() {
     statsGrid.appendChild(card);
   });
 
+  if (window.lucide) {
+    window.lucide.createIcons({ root: container });
+  }
+
   setTimeout(() => {
     const isRTL = document.documentElement.dir === "rtl";
     const palette = [
@@ -175,7 +228,7 @@ function render() {
 
     const patientsServiceCtx = container.querySelector("#chart-patients-service");
     if (patientsServiceCtx) {
-      new Chart(patientsServiceCtx, {
+      dashboardCharts.patientsByService = new Chart(patientsServiceCtx, {
         type: "pie",
         data: {
           labels: patientsByService.map((s) => s.name),
@@ -208,7 +261,7 @@ function render() {
         d.setDate(monday.getDate() + i);
         return d.toLocaleDateString(currentLang, { weekday: "short" });
       });
-      new Chart(appointmentsDayCtx, {
+      dashboardCharts.appointmentsByDay = new Chart(appointmentsDayCtx, {
         type: "bar",
         data: {
           labels: dayLabels,
@@ -234,11 +287,9 @@ function render() {
       });
     }
 
-    const appointmentsEvolutionCtx = container.querySelector(
-      "#chart-appointments-evolution",
-    );
+    const appointmentsEvolutionCtx = container.querySelector("#chart-appointments-evolution");
     if (appointmentsEvolutionCtx) {
-      new Chart(appointmentsEvolutionCtx, {
+      dashboardCharts.appointmentsEvolution = new Chart(appointmentsEvolutionCtx, {
         type: "line",
         data: {
           labels: last7Days.map((d) =>
@@ -267,7 +318,7 @@ function render() {
 
     const doctorsSpecialtyCtx = container.querySelector("#chart-doctors-specialty");
     if (doctorsSpecialtyCtx) {
-      new Chart(doctorsSpecialtyCtx, {
+      dashboardCharts.doctorsBySpecialty = new Chart(doctorsSpecialtyCtx, {
         type: "bar",
         data: {
           labels: doctorsBySpecialty.map((s) => s.specialty),
@@ -293,17 +344,13 @@ function render() {
 
     const appointmentsStatusCtx = container.querySelector("#chart-appointments-status");
     if (appointmentsStatusCtx) {
-      new Chart(appointmentsStatusCtx, {
+      dashboardCharts.appointmentsByStatus = new Chart(appointmentsStatusCtx, {
         type: "doughnut",
         data: {
           labels: [t("scheduled"), t("completed"), t("cancelled")],
           datasets: [
             {
-              data: [
-                statusCounts.scheduled,
-                statusCounts.completed,
-                statusCounts.cancelled,
-              ],
+              data: [statusCounts.scheduled, statusCounts.completed, statusCounts.cancelled],
               backgroundColor: [palette[0], palette[2], palette[4]],
               borderWidth: 0,
             },
@@ -322,8 +369,6 @@ function render() {
       });
     }
   }, 0);
-
-  return container;
 }
 window.App = window.App || {};
 App.Pages = App.Pages || {};

@@ -85,8 +85,16 @@
 
     // Paginate
     const totalPages = Math.ceil(filteredDoctors.length / doctorsState.pageSize);
+    if (totalPages > 0 && doctorsState.page > totalPages) {
+      doctorsState.page = totalPages;
+    }
+    if (totalPages === 0) {
+      doctorsState.page = 1;
+    }
     const startIndex = (doctorsState.page - 1) * doctorsState.pageSize;
     const paginatedDoctors = filteredDoctors.slice(startIndex, startIndex + doctorsState.pageSize);
+    const showingFrom = filteredDoctors.length === 0 ? 0 : startIndex + 1;
+    const showingTo = filteredDoctors.length === 0 ? 0 : Math.min(startIndex + doctorsState.pageSize, filteredDoctors.length);
 
     const renderSortIcon = (key) => {
       if (doctorsState.sortKey !== key) return '<i data-lucide="arrow-up-down" class="w-4 h-4 ms-1 opacity-50"></i>';
@@ -99,7 +107,7 @@
     const nextIcon = isRTL ? 'chevron-left' : 'chevron-right';
 
     let pagesToShow = [];
-    if (totalPages <= 7) {
+    if (totalPages <= 4) {
       pagesToShow = Array.from({ length: totalPages }, (_, i) => i + 1);
     } else {
       pagesToShow = [1];
@@ -344,7 +352,7 @@
           
           <div class="space-y-2 text-sm text-muted-foreground mt-4 pb-4">
              <div class="text-center">
-               ${t("showing")} <span class="font-medium">${startIndex + 1}</span> - <span class="font-medium">${Math.min(startIndex + doctorsState.pageSize, filteredDoctors.length)}</span> ${t("of")} <span class="font-medium">${filteredDoctors.length}</span>
+               ${t("showing")} <span class="font-medium">${showingFrom}</span> - <span class="font-medium">${showingTo}</span> ${t("of")} <span class="font-medium">${filteredDoctors.length}</span>
              </div>
              ${totalPages > 1 ? `
              <div id="pagination" class="flex items-center justify-center gap-2">
@@ -372,19 +380,37 @@
     let activeMenuAnchor = null;
     let activeMenuEl = null;
 
+    const getFixedContainingBlock = (el) => {
+      let p = el && el.parentElement ? el.parentElement : null;
+      while (p) {
+        const cs = window.getComputedStyle(p);
+        const hasTransform = cs.transform && cs.transform !== 'none';
+        const hasFilter = cs.filter && cs.filter !== 'none';
+        const hasBackdrop = cs.backdropFilter && cs.backdropFilter !== 'none';
+        const hasPerspective = cs.perspective && cs.perspective !== 'none';
+        if (hasTransform || hasFilter || hasBackdrop || hasPerspective) return p;
+        p = p.parentElement;
+      }
+      return null;
+    };
+
     const repositionActiveMenu = () => {
       if (!activeMenuAnchor || !activeMenuEl || activeMenuEl.classList.contains("hidden")) return;
       const btnRect = activeMenuAnchor.getBoundingClientRect();
       const isRTL = document.documentElement.dir === 'rtl';
+      const cb = getFixedContainingBlock(activeMenuEl);
+      const cbRect = cb ? cb.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+      const viewportW = cb ? cbRect.width : window.innerWidth;
+      const viewportH = cb ? cbRect.height : window.innerHeight;
       const mw = activeMenuEl.offsetWidth || 192;
       const mh = activeMenuEl.offsetHeight || 120;
-      let top = btnRect.bottom + 8;
-      if (top + mh > window.innerHeight) {
-        top = btnRect.top - mh - 8;
+      let top = btnRect.bottom + 8 - cbRect.top;
+      if (top + mh > viewportH) {
+        top = btnRect.top - mh - 8 - cbRect.top;
       }
-      let left = isRTL ? btnRect.left : btnRect.right - mw;
+      let left = (isRTL ? btnRect.left : btnRect.right - mw) - cbRect.left;
       if (left < 8) left = 8;
-      if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+      if (left + mw > viewportW - 8) left = viewportW - mw - 8;
       activeMenuEl.style.top = `${top}px`;
       activeMenuEl.style.left = `${left}px`;
     };
@@ -473,7 +499,10 @@
                 doctor.specialty.toLowerCase().includes(searchLower)
               );
             });
-            const totalPages = Math.ceil(filteredDoctors.length / doctorsState.pageSize);
+            const filteredWithSpecialty = filteredDoctors.filter((doctor) => {
+              return doctorsState.filterSpecialty ? String(doctor.specialty) === String(doctorsState.filterSpecialty) : true;
+            });
+            const totalPages = Math.ceil(filteredWithSpecialty.length / doctorsState.pageSize);
             if (doctorsState.page < totalPages) {
                 doctorsState.page++;
                 renderPage();
@@ -665,22 +694,26 @@
                 if (menu) {
                     const btnRect = btn.getBoundingClientRect();
                     const isRTL = document.documentElement.dir === 'rtl';
+                    const cb = getFixedContainingBlock(menu);
+                    const cbRect = cb ? cb.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+                    const viewportW = cb ? cbRect.width : window.innerWidth;
+                    const viewportH = cb ? cbRect.height : window.innerHeight;
                     menu.classList.remove("hidden");
                     menu.style.visibility = "hidden";
-                    menu.style.top = `${btnRect.bottom + 8}px`;
-                    menu.style.left = `${isRTL ? btnRect.left : btnRect.right - 192}px`;
+                    menu.style.top = `${btnRect.bottom + 8 - cbRect.top}px`;
+                    menu.style.left = `${(isRTL ? btnRect.left : btnRect.right - 192) - cbRect.left}px`;
                     
                     // Measure then adjust for viewport overflow
                     requestAnimationFrame(() => {
                         const mw = menu.offsetWidth;
                         const mh = menu.offsetHeight;
-                        let top = btnRect.bottom + 8;
-                        if (top + mh > window.innerHeight) {
-                            top = btnRect.top - mh - 8;
+                        let top = btnRect.bottom + 8 - cbRect.top;
+                        if (top + mh > viewportH) {
+                            top = btnRect.top - mh - 8 - cbRect.top;
                         }
-                        let left = isRTL ? btnRect.left : btnRect.right - mw;
+                        let left = (isRTL ? btnRect.left : btnRect.right - mw) - cbRect.left;
                         if (left < 8) left = 8;
-                        if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+                        if (left + mw > viewportW - 8) left = viewportW - mw - 8;
                         menu.style.top = `${top}px`;
                         menu.style.left = `${left}px`;
                         menu.style.visibility = "visible";
