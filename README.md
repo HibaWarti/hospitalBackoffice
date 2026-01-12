@@ -1,35 +1,96 @@
 # Hospital Backoffice
 
-Hospital Backoffice is a lightweight, front-end admin dashboard for managing core hospital data such as patients, doctors, services, appointments, and prescriptions.
+## Deployment
 
-This project is built as a simple static web app (no build step required) and is intended as a clean starting point for a backoffice UI.
+Live application:
 
-## Features
+https://hospitalbackoffice.netlify.app/
 
-- **Authentication UI and session handling** (demo login)
-- **Dashboard** (basic KPIs + charts)
-- **CRUD-style management pages**
-  - Patients
-  - Doctors
-  - Services
-  - Appointments
-  - Prescriptions
-- **Internationalization (i18n)**
-  - English, French, Arabic
-  - RTL support for Arabic
-- **Theme support**
-  - Light / dark theme
+Repository:
 
-## Technologies Used
+https://github.com/HibaWarti/hospitalBackoffice.git
 
-- **HTML5** for the base layout
-- **CSS3** for theming and custom styling (including dark mode variables)
-- **JavaScript (Vanilla)** for routing, rendering, and page logic
-- **Lucide Icons** for icons (via `data-lucide`)
-- **LocalStorage** for persisting:
-  - theme preference
-  - language preference
-  - last visited page
+## Project Description
+
+Hospital Backoffice is a front-end admin dashboard for managing core hospital data:
+
+- Patients
+- Doctors
+- Services
+- Appointments
+- Prescriptions
+
+The application is a static web app using HTML/CSS/Vanilla JavaScript with client-side rendering.
+
+## Technologies
+
+- HTML5
+- CSS3
+- Vanilla JavaScript
+- TailwindCSS (CDN)
+
+## Libraries
+
+- Chart.js (dashboard charts)
+- SweetAlert2 (confirmation dialogs and toast notifications)
+- jsPDF + html2canvas (PDF export)
+- Lucide Icons
+
+## Data Source
+
+- Local JSON data stored in LocalStorage (seeded with a faker-like generator in `js/services/data.js`)
+- No external APIs are used
+
+## Authentication
+
+Demo credentials:
+
+- Username: `admin`
+- Password: `admin`
+
+Session is stored in LocalStorage.
+
+## Main Features
+
+### Dashboard
+
+- Statistic cards
+- Charts (Chart.js)
+
+### Entities / CRUD
+
+Entities implemented:
+
+- Patients
+- Doctors
+- Services
+- Appointments
+- Prescriptions
+
+For each entity, the UI includes:
+
+- Create (add form)
+- Read (table view)
+- Pagination
+- Filters and search
+- Sorting
+- Export CSV
+- Consult (details view)
+- Export PDF
+- Update (edit form)
+- Delete (confirmation popup)
+
+## Internationalization (i18n)
+
+Supported languages:
+
+- English (EN)
+- French (FR)
+- Arabic (AR) with RTL support
+
+## Theme
+
+- Light / Dark
 
 ## Project Structure
 
@@ -55,35 +116,13 @@ hospitalBackoffice/
       utils.js
 ```
 
-### Key Files
+## Installation / Run
 
-- `index.html`
-  - App entry point.
-- `js/main.js`
-  - Renders the shell (sidebar + header), handles navigation, theme toggle, and language switching.
-- `js/services/i18n.js`
-  - Translation dictionary and language/RTL handling.
-- `js/services/theme.js`
-  - Applies light/dark theme.
-- `js/pages/*`
-  - Page modules (rendering + event wiring).
-
-## Getting Started
-
-### Prerequisites
-
-- A modern web browser (Chrome/Edge/Firefox)
-- (Optional) A local static server (recommended for best results)
-
-### Run Locally
-
-You can run the project in either of these ways:
-
-#### Option 1: Open directly
+### Option 1: Open directly
 
 Open `index.html` in your browser.
 
-#### Option 2: Use a simple local server (recommended)
+### Option 2: Run with a local server (recommended)
 
 If you have Python installed:
 
@@ -93,22 +132,13 @@ python -m http.server 5173
 
 Then open:
 
-```
 http://localhost:5173
-```
-
-## Demo Login
-
-The login screen includes a demo credential hint:
-
-- **Username**: `admin`
-- **Password**: `admin`
 
 ## Configuration
 
-- **Language** is stored in LocalStorage under: `hospital_lang`
-- **Theme** is stored in LocalStorage under: `hospital_theme`
+LocalStorage keys:
 
-## Repository
-
-https://github.com/HibaWarti/hospitalBackoffice.git
+- `hospital_lang` (language)
+- `hospital_theme` (theme)
+- `hospital_auth_token` and `hospital_user` (session)
+- `hospital_*` data keys (entities)
