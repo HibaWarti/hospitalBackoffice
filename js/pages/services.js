@@ -7,6 +7,7 @@
   function t(key) { return App.Services.I18n.t(key); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+  function exportReportToPDF(options) { return App.Services.Utils.exportReportToPDF(options); }
   function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
   function toastSuccess(message) { return App.Services.Utils.toastSuccess(message); }
   function toastError(message) { return App.Services.Utils.toastError(message); }
@@ -184,9 +185,10 @@
 
     return `
       <div class="space-y-6 animate-fade-in">
-        <div class="flex items-center justify-between gap-3 min-w-0">
+        <div class="grid grid-cols-[1fr_auto] gap-3 items-center">
           <h1 class="text-3xl font-heading font-bold min-w-0 truncate sm:whitespace-normal sm:overflow-visible sm:text-clip">${t("services")}</h1>
-          <div class="flex flex-nowrap gap-2 shrink-0">
+
+          <div class="flex flex-nowrap gap-2 justify-end shrink-0 row-start-1 col-start-2 sm:row-start-2 sm:col-start-2">
             <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-3 whitespace-nowrap">
                 <i data-lucide="rotate-ccw" class="w-4 h-4 sm:${gapClass}"></i>
                 <span class="hidden sm:inline">${t("reset")}</span>
@@ -208,19 +210,21 @@
               <span class="hidden sm:inline">${t("add")}</span>
             </button>
           </div>
-        </div>
 
-        <div class="flex flex-col sm:flex-row gap-4 justify-between">
-          <div class="flex flex-1 gap-2 max-w-lg">
-            <div class="relative flex-1">
-                <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
-                <input 
-                  type="text" 
-                  id="search-input" 
-                  placeholder="${t("search")}" 
-                  value="${servicesState.search}"
-                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                />
+          <div class="row-start-2 col-span-2 sm:col-span-1 sm:col-start-1">
+            <div class="flex flex-col sm:flex-row gap-4 justify-between">
+              <div class="flex flex-1 gap-2 max-w-lg">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                    <input 
+                      type="text" 
+                      id="search-input" 
+                      placeholder="${t("search")}" 
+                      value="${servicesState.search}"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -646,10 +650,17 @@
                         </div>
                     `;
                     container.querySelector("#export-detail-pdf-btn")?.addEventListener("click", () => {
-                        const element = container.querySelector('#service-details-modal');
-                        if (element) {
-                            exportElementToPDF(element, `service_${service.name}`);
-                        }
+                        const baseName = `service_${String(service.name || '').trim()}`.replace(/\s+/g, '_').replace(/[^\w\-]/g, '') || 'service';
+                        exportReportToPDF({
+                          filename: baseName,
+                          title: t('serviceDetails') || t('service') || 'Service',
+                          subtitle: String(service.name || '').trim(),
+                          fields: [
+                            { label: t('name'), value: service.name },
+                            { label: t('description'), value: service.description || '-' },
+                            { label: t('specialties'), value: Array.isArray(service.specialties) ? service.specialties.join(', ') : '' },
+                          ]
+                        });
                     });
                 }
             }

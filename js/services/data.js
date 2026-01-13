@@ -95,11 +95,23 @@ const SERVICE_DESCRIPTIONS = {
   "Pharmacy": "Dispensing medications and providing pharmaceutical care.",
 };
 
+const SERVICE_SPECIALTIES = {
+  "Emergency": ["General Medicine", "Surgery"],
+  "Cardiology": ["Cardiology"],
+  "Neurology": ["Neurology"],
+  "Pediatrics": ["Pediatrics"],
+  "Orthopedics": ["Orthopedics"],
+  "Radiology": ["Radiology"],
+  "Laboratory": ["Laboratory"],
+  "Pharmacy": ["Pharmacy"],
+};
+
 function generateServices() {
   return SERVICE_NAMES.map((name, index) => ({
     id: `service-${index + 1}`,
     name,
     description: SERVICE_DESCRIPTIONS[name] || faker.lorem.sentence(),
+    specialties: SERVICE_SPECIALTIES[name] || [name],
     headDoctorId: undefined,
   }));
 }
@@ -108,15 +120,19 @@ function generateDoctors(services) {
   return Array.from({ length: 50 }, (_, index) => {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
+    const service = faker.helpers.arrayElement(services);
+    const serviceSpecialties = (service && Array.isArray(service.specialties) && service.specialties.length > 0)
+      ? service.specialties
+      : SPECIALTIES;
     return {
       id: `doctor-${index + 1}`,
       firstName,
       lastName,
       name: `${firstName} ${lastName}`,
-      specialty: faker.helpers.arrayElement(SPECIALTIES),
+      specialty: faker.helpers.arrayElement(serviceSpecialties),
       phone: faker.phone.number(),
       email: faker.internet.email(),
-      serviceId: faker.helpers.arrayElement(services).id,
+      serviceId: service.id,
     };
   });
 }
@@ -257,6 +273,42 @@ function initializeData() {
     const patients = JSON.parse(localStorage.getItem(STORAGE_KEYS.patients) || '[]');
     const services = JSON.parse(localStorage.getItem(STORAGE_KEYS.services) || '[]');
     const prescriptions = JSON.parse(localStorage.getItem(STORAGE_KEYS.prescriptions) || '[]');
+
+    // Lightweight migration for new schema fields
+    let migrated = false;
+    const migratedServices = Array.isArray(services) ? services.map((s) => {
+      if (!s) return s;
+      if (!Array.isArray(s.specialties) || s.specialties.length === 0) {
+        migrated = true;
+        return { ...s, specialties: SERVICE_SPECIALTIES[s.name] || [s.name] };
+      }
+      return s;
+    }) : services;
+
+    const serviceIds = (Array.isArray(migratedServices) ? migratedServices : []).map(s => s && s.id).filter(Boolean);
+    const migratedDoctors = Array.isArray(doctors) ? doctors.map((d) => {
+      if (!d) return d;
+      let next = d;
+      if (!next.name && (next.firstName || next.lastName)) {
+        migrated = true;
+        next = { ...next, name: `${next.firstName || ''} ${next.lastName || ''}`.trim() };
+      }
+      if (!next.serviceId && serviceIds.length > 0) {
+        migrated = true;
+        next = { ...next, serviceId: faker.helpers.arrayElement(serviceIds) };
+      }
+      const svc = (Array.isArray(migratedServices) ? migratedServices : []).find(s => s && s.id === next.serviceId);
+      if (svc && Array.isArray(svc.specialties) && svc.specialties.length > 0 && next.specialty && !svc.specialties.includes(next.specialty)) {
+        migrated = true;
+        next = { ...next, specialty: svc.specialties[0] };
+      }
+      return next;
+    }) : doctors;
+
+    if (migrated) {
+      localStorage.setItem(STORAGE_KEYS.services, JSON.stringify(migratedServices));
+      localStorage.setItem(STORAGE_KEYS.doctors, JSON.stringify(migratedDoctors));
+    }
     
     const needsRefresh = 
       (doctors.length > 0 && (!doctors[0].name || doctors[0].name === "Doctor 1")) || 

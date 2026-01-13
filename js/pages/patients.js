@@ -8,6 +8,7 @@ function getServices() { return App.Services.Data.getServices(); }
 function t(key) { return App.Services.I18n.t(key); }
 function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
 function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+function exportReportToPDF(options) { return App.Services.Utils.exportReportToPDF(options); }
 function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
 function toastSuccess(message) { return App.Services.Utils.toastSuccess(message); }
 function toastError(message) { return App.Services.Utils.toastError(message); }
@@ -135,9 +136,10 @@ function generateHTML() {
 
   return `
     <div class="space-y-6 animate-fade-in">
-      <div class="flex items-center justify-between gap-3 min-w-0">
+      <div class="grid grid-cols-[1fr_auto] gap-3 items-center">
         <h1 class="text-3xl font-heading font-bold min-w-0 truncate sm:whitespace-normal sm:overflow-visible sm:text-clip">${t("patients")}</h1>
-        <div class="flex flex-nowrap gap-2 justify-end shrink-0">
+
+        <div class="flex flex-nowrap gap-2 justify-end shrink-0 row-start-1 col-start-2 sm:row-start-2 sm:col-start-2">
           <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-3 whitespace-nowrap">
             <i data-lucide="rotate-ccw" class="w-4 h-4 sm:${gapClass}"></i>
             <span class="hidden sm:inline">${t("reset")}</span>
@@ -159,31 +161,33 @@ function generateHTML() {
             <span class="hidden sm:inline">${t("add")}</span>
           </button>
         </div>
-      </div>
 
-      <div class="flex flex-col sm:flex-row gap-4 justify-between">
-        <div class="flex flex-1 flex-wrap gap-2 max-w-lg">
-          <div class="relative flex-1">
-            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
-            <input 
-              type="text" 
-              id="search-input" 
-              placeholder="${t("search")}" 
-              value="${patientsState.search}"
-              class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-            />
+        <div class="row-start-2 col-span-2 sm:col-span-1 sm:col-start-1">
+          <div class="flex flex-col sm:flex-row gap-4 justify-between">
+            <div class="flex flex-1 flex-wrap gap-2 max-w-lg">
+              <div class="relative flex-1">
+                <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                <input 
+                  type="text" 
+                  id="search-input" 
+                  placeholder="${t("search")}" 
+                  value="${patientsState.search}"
+                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+              <select id="blood-type-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <option value="">${t("bloodGroup")}</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </div>
           </div>
-          <select id="blood-type-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-            <option value="">${t("bloodGroup")}</option>
-            <option value="A+">A+</option>
-            <option value="A-">A-</option>
-            <option value="B+">B+</option>
-            <option value="B-">B-</option>
-            <option value="AB+">AB+</option>
-            <option value="AB-">AB-</option>
-            <option value="O+">O+</option>
-            <option value="O-">O-</option>
-          </select>
         </div>
       </div>
 
@@ -610,13 +614,23 @@ function attachListeners(container) {
   const detailExportBtn = container.querySelector('#patient-details-export');
   if (detailExportBtn) {
     detailExportBtn.addEventListener('click', () => {
-      const element = container.querySelector('#patient-details-modal');
-      // Hide close button and other non-printable elements is handled by ignoreElements in utils
-      if (element && patientsState.viewingId) {
-        const patient = getPatient(patientsState.viewingId);
-        const name = patient ? `${patient.firstName}_${patient.lastName}` : 'patient';
-        exportElementToPDF(element, `patient_${name}`);
-      }
+      if (!patientsState.viewingId) return;
+      const patient = getPatient(patientsState.viewingId);
+      if (!patient) return;
+      const baseName = `patient_${String(patient.firstName || '').trim()}_${String(patient.lastName || '').trim()}`.replace(/\s+/g, '_').replace(/[^\w\-]/g, '') || 'patient';
+      exportReportToPDF({
+        filename: baseName,
+        title: t('patientDetails') || t('patient') || 'Patient',
+        subtitle: `${String(patient.firstName || '').trim()} ${String(patient.lastName || '').trim()}`.trim(),
+        fields: [
+          { label: t('firstName'), value: patient.firstName },
+          { label: t('lastName'), value: patient.lastName },
+          { label: t('email'), value: patient.email },
+          { label: t('phone'), value: patient.phone },
+          { label: t('bloodGroup'), value: patient.bloodGroup },
+          { label: t('registrationDate'), value: patient.registrationDate || '' },
+        ]
+      });
     });
   }
 
@@ -716,15 +730,6 @@ function attachListeners(container) {
       `;
       detailsModal.classList.remove("hidden");
       detailsModal.classList.add("flex");
-      const exportBtn = detailsModal.querySelector('#patient-details-export');
-      if (exportBtn) {
-        const newBtn = exportBtn.cloneNode(true);
-        exportBtn.replaceWith(newBtn);
-        newBtn.addEventListener('click', () => {
-          const element = detailsModal.querySelector('#patient-details-modal');
-          exportElementToPDF(element, `patient_${patient.firstName}_${patient.lastName}`);
-        });
-      }
       const overlay = document.getElementById("global-overlay");
       overlay?.classList.remove("hidden");
     }

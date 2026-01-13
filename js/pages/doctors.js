@@ -4,10 +4,13 @@
   function addDoctor(d) { return App.Services.Data.addDoctor(d); }
   function updateDoctor(id, updates) { return App.Services.Data.updateDoctor(id, updates); }
   function deleteDoctor(id) { return App.Services.Data.deleteDoctor(id); }
+  function getServices() { return App.Services.Data.getServices(); }
+  function getService(id) { return App.Services.Data.getService(id); }
   function t(key) { return App.Services.I18n.t(key); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
   function exportDetailsToPDF(data, filename, title, fields) { return App.Services.Utils.exportDetailsToPDF(data, filename, title, fields); }
+  function exportReportToPDF(options) { return App.Services.Utils.exportReportToPDF(options); }
   function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
   function toastSuccess(message) { return App.Services.Utils.toastSuccess(message); }
   function toastError(message) { return App.Services.Utils.toastError(message); }
@@ -72,9 +75,17 @@
 
   function generateHTML() {
     const allDoctors = getDoctors();
+    const services = getServices();
     const isRTL = document.documentElement.dir === 'rtl';
     const gapClass = isRTL ? 'ml-2' : 'mr-2';
     const specialties = [...new Set(allDoctors.map(d => d.specialty))].filter(Boolean).sort();
+
+    const editingDoctor = doctorsState.editingId ? getDoctor(doctorsState.editingId) : null;
+    const selectedServiceId = editingDoctor?.serviceId || (services[0]?.id || '');
+    const selectedService = selectedServiceId ? getService(selectedServiceId) : null;
+    const formSpecialties = (selectedService && Array.isArray(selectedService.specialties) && selectedService.specialties.length > 0)
+      ? selectedService.specialties
+      : specialties;
     
     // Filter
     let filteredDoctors = allDoctors.filter(doctor => {
@@ -181,16 +192,20 @@
               </div>
             </div>
             <div class="space-y-2">
+              <label class="text-sm font-medium">${t("service")}</label>
+              <select name="serviceId" required class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                ${services.map(s => `<option value="${s.id}" ${String(s.id) === String(selectedServiceId) ? 'selected' : ''}>${s.name}</option>`).join('')}
+              </select>
+            </div>
+            <div class="space-y-2">
               <label class="text-sm font-medium">${t("specialty")}</label>
               <select name="specialty" required class="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                 <option value="Cardiology">${t("cardiology")}</option>
-                 <option value="Neurology">${t("neurology")}</option>
-                 <option value="Pediatrics">${t("pediatrics")}</option>
-                 <option value="Orthopedics">${t("orthopedics")}</option>
-                 <option value="Dermatology">${t("dermatology")}</option>
-                 <option value="General Medicine">${t("generalMedicine")}</option>
-                 <option value="Surgery">${t("surgery")}</option>
-                 <option value="Oncology">${t("oncology")}</option>
+                ${formSpecialties.map(sp => {
+                  const key = String(sp).toLowerCase().replace(' ', '');
+                  const label = t(key) || sp;
+                  const selected = (editingDoctor && String(editingDoctor.specialty) === String(sp)) ? 'selected' : '';
+                  return `<option value="${sp}" ${selected}>${label}</option>`;
+                }).join('')}
               </select>
             </div>
             <div class="flex justify-end gap-3 mt-6">
@@ -256,13 +271,14 @@
 
     return `
       <div class="space-y-6 animate-fade-in">
-        <div class="flex items-center justify-between gap-3 min-w-0">
+        <div class="grid grid-cols-[1fr_auto] gap-3 items-center">
           <h1 class="text-3xl font-heading font-bold min-w-0 truncate sm:whitespace-normal sm:overflow-visible sm:text-clip">${t("doctors")}</h1>
-          <div class="flex flex-nowrap gap-2 justify-end shrink-0">
-          <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 whitespace-nowrap">
-            <i data-lucide="rotate-ccw" class="w-4 h-4 sm:${gapClass}"></i>
-            <span class="hidden sm:inline">${t("reset")}</span>
-          </button>
+
+          <div class="flex flex-nowrap gap-2 justify-end shrink-0 row-start-1 col-start-2 sm:row-start-2 sm:col-start-2">
+            <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 whitespace-nowrap">
+              <i data-lucide="rotate-ccw" class="w-4 h-4 sm:${gapClass}"></i>
+              <span class="hidden sm:inline">${t("reset")}</span>
+            </button>
             <div class="relative inline-block text-left">
               <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 whitespace-nowrap">
                 <i data-lucide="download" class="w-4 h-4 sm:${gapClass}"></i>
@@ -280,24 +296,26 @@
               <span class="hidden sm:inline">${t("add")}</span>
             </button>
           </div>
-        </div>
 
-        <div class="flex flex-col sm:flex-row gap-4 justify-between">
-          <div class="flex flex-1 flex-wrap gap-2 w-full sm:max-w-lg">
-            <div class="relative flex-1">
-                <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
-                <input 
-                  type="text" 
-                  id="search-input" 
-                  placeholder="${t("search")}" 
-                  value="${doctorsState.search}"
-                  class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                />
+          <div class="row-start-2 col-span-2 sm:col-span-1 sm:col-start-1">
+            <div class="flex flex-col sm:flex-row gap-4 justify-between">
+              <div class="flex flex-1 flex-wrap gap-2 w-full sm:max-w-lg">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                    <input 
+                      type="text" 
+                      id="search-input" 
+                      placeholder="${t("search")}" 
+                      value="${doctorsState.search}"
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                </div>
+                <select id="specialty-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  <option value="">${t("specialty")}</option>
+                  ${specialties.map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+              </div>
             </div>
-            <select id="specialty-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              <option value="">${t("specialty")}</option>
-              ${specialties.map(s => `<option value="${s}">${s}</option>`).join('')}
-            </select>
           </div>
         </div>
 
@@ -398,6 +416,19 @@
     const renderPage = () => updateContent(container);
     let activeMenuAnchor = null;
     let activeMenuEl = null;
+
+    const buildSpecialtyOptionsForService = (serviceId) => {
+      const svc = serviceId ? getService(serviceId) : null;
+      const globalSpecialties = [...new Set(getDoctors().map(d => d.specialty))].filter(Boolean).sort();
+      const list = (svc && Array.isArray(svc.specialties) && svc.specialties.length > 0)
+        ? svc.specialties
+        : globalSpecialties;
+      return list.map((sp) => {
+        const key = String(sp).toLowerCase().replace(' ', '');
+        const label = t(key) || sp;
+        return `<option value="${sp}">${label}</option>`;
+      }).join('');
+    };
 
     const getFixedContainingBlock = (el) => {
       let p = el && el.parentElement ? el.parentElement : null;
@@ -621,6 +652,12 @@
                 form.lastName.value = doctor.lastName;
                 form.email.value = doctor.email;
                 form.phone.value = doctor.phone;
+                if (form.serviceId) {
+                  form.serviceId.value = doctor.serviceId || form.serviceId.value;
+                }
+                if (form.serviceId && form.specialty) {
+                  form.specialty.innerHTML = buildSpecialtyOptionsForService(form.serviceId.value);
+                }
                 form.specialty.value = doctor.specialty;
             }
         }
@@ -662,6 +699,12 @@
 
     const form = container.querySelector('#doctor-form');
     if (form) {
+        if (form.serviceId && form.specialty) {
+          form.serviceId.addEventListener('change', (e) => {
+            const nextServiceId = e.target.value;
+            form.specialty.innerHTML = buildSpecialtyOptionsForService(nextServiceId);
+          });
+        }
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(form);
@@ -672,7 +715,7 @@
                 toastSuccess(t('updatedSuccessfully'));
             } else {
                 await addDoctorAsync(data);
-                toastSuccess(t('createdSuccessfully'));
+                toastSuccess(t('addedSuccessfully'));
             }
             closeModal();
         });
@@ -686,9 +729,21 @@
         newBtn.addEventListener('click', () => {
              const doctor = getDoctor(doctorsState.viewingId);
              if (doctor) {
-                 const modalContent = container.querySelector('#doctor-details-overlay > div'); // Targeting the card inside modal
                  const baseName = `${String(doctor.firstName || '').trim()}_${String(doctor.lastName || '').trim()}`.replace(/\s+/g, '_').replace(/[^\w\-]/g, '') || 'doctor';
-                 exportElementToPDF(modalContent, baseName);
+                 const service = doctor.serviceId ? getService(doctor.serviceId) : null;
+                 exportReportToPDF({
+                   filename: baseName,
+                   title: t('doctorDetails') || t('doctor') || 'Doctor',
+                   subtitle: `${String(doctor.firstName || '').trim()} ${String(doctor.lastName || '').trim()}`.trim(),
+                   fields: [
+                     { label: t('firstName'), value: doctor.firstName },
+                     { label: t('lastName'), value: doctor.lastName },
+                     { label: t('email'), value: doctor.email },
+                     { label: t('phone'), value: doctor.phone },
+                     { label: t('service'), value: service ? service.name : (doctor.serviceId || '') },
+                     { label: t('specialty'), value: doctor.specialty },
+                   ]
+                 });
              }
         });
     }

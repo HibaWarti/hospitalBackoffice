@@ -13,6 +13,7 @@
   function t(key) { return App.Services.I18n.t(key); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+  function exportReportToPDF(options) { return App.Services.Utils.exportReportToPDF(options); }
   function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
   function formatDateDMY(value) { return App.Services.Utils.formatDateDMY(value); }
   function toastSuccess(message) { return App.Services.Utils.toastSuccess(message); }
@@ -282,9 +283,10 @@
 
     return `
       <div class="space-y-6 animate-fade-in">
-        <div class="flex items-center justify-between gap-3 min-w-0">
+        <div class="grid grid-cols-[1fr_auto] gap-3 items-center">
           <h1 class="text-3xl font-heading font-bold min-w-0 truncate sm:whitespace-normal sm:overflow-visible sm:text-clip">${t("appointments")}</h1>
-          <div class="flex flex-nowrap gap-2 justify-end shrink-0">
+
+          <div class="flex flex-nowrap gap-2 justify-end shrink-0 row-start-1 col-start-2 sm:row-start-2 sm:col-start-2">
             <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-10 px-3 whitespace-nowrap">
                 <i data-lucide="rotate-ccw" class="w-4 h-4 sm:${gapClass}"></i>
                 <span class="hidden sm:inline">${t("reset")}</span>
@@ -306,34 +308,36 @@
               <span class="hidden sm:inline">${t("add")}</span>
             </button>
           </div>
-        </div>
 
-        <div class="flex flex-col sm:flex-row gap-4 justify-between">
-          <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-1 sm:flex-wrap sm:gap-2">
-            <div class="relative flex-1 col-span-2 sm:col-span-1">
-              <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
-              <input 
-                type="text" 
-                id="search-input" 
-                placeholder="${t("search")}" 
-                value="${appointmentsState.search}"
-                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              />
+          <div class="row-start-2 col-span-2 sm:col-span-1 sm:col-start-1">
+            <div class="flex flex-col sm:flex-row gap-4 justify-between">
+              <div class="grid grid-cols-2 gap-2 w-full sm:flex sm:flex-1 sm:flex-wrap sm:flex-row sm:gap-2">
+                <div class="relative col-span-2 sm:flex-1 sm:min-w-[220px]">
+                  <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                  <input 
+                    type="text" 
+                    id="search-input" 
+                    placeholder="${t("search")}" 
+                    value="${appointmentsState.search}"
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                </div>
+                <input
+                  type="date"
+                  lang="fr"
+                  id="date-filter"
+                  value="${appointmentsState.filterDate}"
+                  class="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:w-auto sm:min-w-[180px]"
+                  placeholder="${t("date") || 'Date'}"
+                >
+                <select id="status-filter" class="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:w-auto sm:min-w-[180px]">
+                  <option value="">${t("status")}</option>
+                  <option value="scheduled">${t("scheduled")}</option>
+                  <option value="completed">${t("completed")}</option>
+                  <option value="cancelled">${t("cancelled")}</option>
+                </select>
+              </div>
             </div>
-            <input
-              type="date"
-              lang="fr"
-              id="date-filter"
-              value="${appointmentsState.filterDate}"
-              class="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              placeholder="${t("date") || 'Date'}"
-            >
-            <select id="status-filter" class="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              <option value="">${t("status")}</option>
-              <option value="scheduled">${t("scheduled")}</option>
-              <option value="completed">${t("completed")}</option>
-              <option value="cancelled">${t("cancelled")}</option>
-            </select>
           </div>
         </div>
 
@@ -593,8 +597,22 @@
         if (appointmentsState.viewingId) {
             const app = getAppointment(appointmentsState.viewingId);
             if (app) {
-                const element = container.querySelector("#details-modal-content");
-                exportElementToPDF(element, `appointment-${app.id}`);
+                const patient = getPatient(app.patientId);
+                const doctor = getDoctor(app.doctorId);
+                const patientName = patient ? `${String(patient.firstName || '').trim()} ${String(patient.lastName || '').trim()}`.trim() : t('unknown');
+                const doctorName = doctor ? `${String(doctor.firstName || '').trim()} ${String(doctor.lastName || '').trim()}`.trim() : t('unknown');
+                exportReportToPDF({
+                  filename: `appointment_${String(app.id || '').trim()}`,
+                  title: t('appointmentDetails') || t('appointment') || 'Appointment',
+                  subtitle: String(app.id || '').trim(),
+                  fields: [
+                    { label: t('date'), value: formatDateDMY(app.date) },
+                    { label: t('time'), value: app.time },
+                    { label: t('status'), value: t(app.status) || app.status },
+                    { label: t('patient'), value: patientName },
+                    { label: t('doctor'), value: doctorName },
+                  ]
+                });
             }
         }
     });

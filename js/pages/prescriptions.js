@@ -30,6 +30,7 @@
   function t(key) { return App.Services.I18n.t(key); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+  function exportReportToPDF(options) { return App.Services.Utils.exportReportToPDF(options); }
   function exportElementToPDF(element, filename) { return App.Services.Utils.exportElementToPDF(element, filename); }
   function toastSuccess(message) { return App.Services.Utils.toastSuccess(message); }
   function toastWarning(message) { return App.Services.Utils.toastWarning(message); }
@@ -174,9 +175,10 @@
     return `
       <div class="space-y-6 animate-fade-in pb-8"> 
         <div class="flex flex-col gap-4">
-            <div class="flex items-center justify-between gap-3 min-w-0">
+            <div class="grid grid-cols-[1fr_auto] gap-3 items-center">
                 <h1 class="text-3xl font-heading font-bold min-w-0 truncate sm:whitespace-normal sm:overflow-visible sm:text-clip">${t("prescriptions")}</h1>
-                <div class="flex flex-nowrap gap-2 justify-end shrink-0">
+
+                <div class="flex flex-nowrap gap-2 justify-end shrink-0 row-start-1 col-start-2 sm:row-start-2 sm:col-start-2">
                     <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-10 px-3 whitespace-nowrap">
                         <i data-lucide="rotate-ccw" class="w-4 h-4 sm:${gapClass}"></i>
                         <span class="hidden sm:inline">${t("reset")}</span>
@@ -187,7 +189,7 @@
                             <i data-lucide="download" class="w-4 h-4 sm:${gapClass}"></i>
                             <span class="hidden sm:inline">${t("export")}</span>
                         </button>
-                        <div id="export-menu" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card text-foreground border border-border ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                        <div id="export-menu" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card text-foreground border border-border ring-1 ring-black ring-opacity-5 focus-visible:outline-none z-50">
                             <div class="py-1">
                                 <button id="export-csv" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors">
                                     ${t("exportCSV")}
@@ -203,33 +205,34 @@
                         <span class="hidden sm:inline">${t("add")}</span>
                     </button>
                 </div>
-            </div>
 
-            <div class="flex flex-col sm:flex-row gap-4 justify-between flex-wrap">
-                <div class="flex flex-1 flex-wrap gap-2 w-full sm:max-w-lg">
-                    <div class="relative flex-1">
-                        <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
-                        <input
-                            type="text"
-                            id="search-input"
-                            placeholder="${t("search") }"
-                            value="${prescriptionsState.searchQuery}"
-                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                    </div>
+                <div class="row-start-2 col-span-2 sm:col-span-1 sm:col-start-1">
+                    <div class="flex flex-col sm:flex-row gap-4 justify-between flex-wrap">
+                        <div class="flex flex-1 flex-wrap gap-2 w-full sm:max-w-lg">
+                            <div class="relative flex-1">
+                                <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                                <input
+                                    type="text"
+                                    id="search-input"
+                                    placeholder="${t("search") }"
+                                    value="${prescriptionsState.searchQuery}"
+                                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                            </div>
 
-                    <div class="relative">
-                        <input
-                            type="date"
-                            lang="fr"
-                            id="date-filter"
-                            value="${prescriptionsState.filterDate}"
-                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            placeholder="${t("date") || 'Date'}"
-                        >
+                            <div class="relative">
+                                <input
+                                    type="date"
+                                    lang="fr"
+                                    id="date-filter"
+                                    value="${prescriptionsState.filterDate}"
+                                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    placeholder="${t("date") || 'Date'}"
+                                >
+                            </div>
+                        </div>
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -705,13 +708,28 @@
 
     // View PDF Export
     container.querySelector('#view-export-pdf')?.addEventListener('click', () => {
-         const modalContent = container.querySelector('#view-modal > div');
-         // We might want to use a more specific ID if needed, but this targets the card
-         if (modalContent) {
-            // Get patient name for filename
-            const patientName = container.querySelector('#view-patient').innerText;
-            exportElementToPDF(modalContent, `prescription-${patientName.replace(/\s+/g, '-')}`);
-         }
+         const patientName = container.querySelector('#view-patient')?.innerText;
+         const doctorName = container.querySelector('#view-doctor')?.innerText;
+         const date = container.querySelector('#view-date')?.innerText;
+         const dosage = container.querySelector('#view-dosage')?.innerText;
+         const medications = container.querySelector('#view-medications')?.innerText;
+
+         const safePatient = String(patientName || '').trim().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
+         const safeDate = String(date || '').trim().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
+         const baseName = (`prescription_${safePatient}_${safeDate}`.replace(/_+/g, '_')).replace(/^_+|_+$/g, '') || 'prescription';
+
+         exportReportToPDF({
+           filename: baseName,
+           title: t('prescriptionDetails') || t('prescription') || 'Prescription',
+           subtitle: String(patientName || '').trim(),
+           fields: [
+             { label: t('patient'), value: patientName },
+             { label: t('doctor'), value: doctorName },
+             { label: t('date'), value: date },
+             { label: t('dosage'), value: dosage },
+             { label: t('medications'), value: medications },
+           ]
+         });
     });
 
     // Row Menu Actions (Delegation)

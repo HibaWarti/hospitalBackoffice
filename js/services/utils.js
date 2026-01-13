@@ -240,6 +240,137 @@ function exportDetailsToPDF(data, filename, title, fields) {
    exportToPDF([data], filename, title, fields);
 }
 
+function exportReportToPDF(options) {
+  const opts = options || {};
+  const filename = opts.filename || 'report';
+  const title = opts.title || t('report') || 'Report';
+  const subtitle = opts.subtitle || '';
+  const fields = Array.isArray(opts.fields) ? opts.fields : [];
+  const sections = Array.isArray(opts.sections) ? opts.sections : [];
+
+  const wrapper = document.createElement('div');
+  wrapper.style.position = 'absolute';
+  wrapper.style.left = '-9999px';
+  wrapper.style.top = '0';
+  wrapper.style.width = '800px';
+  wrapper.style.padding = '56px';
+  wrapper.style.background = '#ffffff';
+  wrapper.style.color = '#000000';
+  wrapper.style.fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"';
+  wrapper.dir = document.documentElement.dir || 'ltr';
+
+  const style = document.createElement('style');
+  style.innerHTML = `
+    .pdf-report-root, .pdf-report-root * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      text-shadow: none !important;
+      filter: none !important;
+    }
+    .pdf-report-root { color: #000000; }
+    .pdf-report-root * { color: #000000 !important; opacity: 1 !important; }
+  `;
+  wrapper.className = 'pdf-report-root';
+  wrapper.appendChild(style);
+
+  const h1 = document.createElement('h1');
+  h1.innerText = title;
+  h1.style.margin = '0 0 6px 0';
+  h1.style.fontSize = '22px';
+  h1.style.fontWeight = '700';
+  wrapper.appendChild(h1);
+
+  if (subtitle) {
+    const sub = document.createElement('div');
+    sub.innerText = subtitle;
+    sub.style.marginBottom = '10px';
+    sub.style.fontSize = '13px';
+    sub.style.color = '#374151';
+    wrapper.appendChild(sub);
+  }
+
+  const meta = document.createElement('div');
+  meta.innerText = `${t('generatedOn')}: ${new Date().toLocaleString()}`;
+  meta.style.marginBottom = '18px';
+  meta.style.fontSize = '12px';
+  meta.style.color = '#6b7280';
+  wrapper.appendChild(meta);
+
+  const card = document.createElement('div');
+  card.style.border = '1px solid #e5e7eb';
+  card.style.borderRadius = '12px';
+  card.style.padding = '28px';
+  card.style.background = '#ffffff';
+  wrapper.appendChild(card);
+
+  const renderFields = (target, items) => {
+    const grid = document.createElement('div');
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = '1fr 1fr';
+    grid.style.gap = '14px 18px';
+    target.appendChild(grid);
+
+    items.forEach((f) => {
+      const label = (f && f.label != null) ? String(f.label) : '';
+      const value = (f && f.value != null) ? String(f.value) : '-';
+
+      const cell = document.createElement('div');
+      cell.style.minWidth = '0';
+
+      const l = document.createElement('div');
+      l.innerText = label;
+      l.style.fontSize = '12px';
+      l.style.color = '#6b7280';
+      l.style.marginBottom = '4px';
+
+      const v = document.createElement('div');
+      v.innerText = value;
+      v.style.fontSize = '14px';
+      v.style.fontWeight = '600';
+      v.style.wordBreak = 'break-word';
+
+      cell.appendChild(l);
+      cell.appendChild(v);
+      grid.appendChild(cell);
+    });
+  };
+
+  if (fields.length > 0) {
+    renderFields(card, fields);
+  }
+
+  sections.forEach((section) => {
+    const titleText = section && section.title != null ? String(section.title) : '';
+    const items = Array.isArray(section?.fields) ? section.fields : [];
+    if (!titleText && items.length === 0) return;
+
+    const hr = document.createElement('div');
+    hr.style.height = '1px';
+    hr.style.background = '#e5e7eb';
+    hr.style.margin = '18px 0';
+    card.appendChild(hr);
+
+    if (titleText) {
+      const h2 = document.createElement('h2');
+      h2.innerText = titleText;
+      h2.style.fontSize = '14px';
+      h2.style.fontWeight = '700';
+      h2.style.margin = '0 0 10px 0';
+      card.appendChild(h2);
+    }
+
+    if (items.length > 0) {
+      renderFields(card, items);
+    }
+  });
+
+  document.body.appendChild(wrapper);
+  return exportElementToPDF(wrapper, filename, { raw: true }).finally(() => {
+    if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+  });
+}
+
 function exportElementToPDF(element, filename, options) {
   if (!window.html2canvas || !window.jspdf) {
     console.error(t('pdfLibNotLoaded'));
@@ -422,6 +553,7 @@ App.Services.Utils = {
   exportToCSV,
   exportToPDF,
   exportDetailsToPDF,
+  exportReportToPDF,
   exportElementToPDF,
   formatDateDMY,
   toastSuccess,
