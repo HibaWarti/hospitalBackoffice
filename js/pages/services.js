@@ -67,7 +67,7 @@
     const gapClass = isRTL ? 'ml-2' : 'mr-2';
     const prevIcon = isRTL ? 'chevron-right' : 'chevron-left';
     const nextIcon = isRTL ? 'chevron-left' : 'chevron-right';
-    
+
     // Filter
     let filteredServices = allServices.filter(service => {
       const searchLower = servicesState.search.toLowerCase();
@@ -184,8 +184,32 @@
 
     return `
       <div class="space-y-6 animate-fade-in">
-        <h1 class="text-3xl font-heading font-bold">${t("services")}</h1>
-        
+        <div class="flex items-center justify-between gap-3 min-w-0">
+          <h1 class="text-3xl font-heading font-bold min-w-0 truncate sm:whitespace-normal sm:overflow-visible sm:text-clip">${t("services")}</h1>
+          <div class="flex flex-nowrap gap-2 shrink-0">
+            <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-3 whitespace-nowrap">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 sm:${gapClass}"></i>
+                <span class="hidden sm:inline">${t("reset")}</span>
+            </button>
+            <div class="relative inline-block text-left">
+              <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 whitespace-nowrap">
+                <i data-lucide="download" class="w-4 h-4 sm:${gapClass}"></i>
+                <span class="hidden sm:inline">${t("export")}</span>
+              </button>
+              <div id="export-menu" class="hidden absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-card text-foreground border border-border ring-1 ring-black ring-opacity-5 focus-visible:outline-none z-50">
+                <div class="py-1">
+                  <button id="export-csv" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors">${t("exportCSV")}</button>
+                  <button id="export-pdf" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors">${t("exportPDF")}</button>
+                </div>
+              </div>
+            </div>
+            <button id="add-service-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-9 px-4 py-2 whitespace-nowrap">
+              <i data-lucide="plus" class="w-4 h-4 sm:${gapClass}"></i>
+              <span class="hidden sm:inline">${t("add")}</span>
+            </button>
+          </div>
+        </div>
+
         <div class="flex flex-col sm:flex-row gap-4 justify-between">
           <div class="flex flex-1 gap-2 max-w-lg">
             <div class="relative flex-1">
@@ -198,28 +222,6 @@
                   class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                 />
             </div>
-          </div>
-        <div class="flex gap-2">
-            <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-3">
-                <i data-lucide="rotate-ccw" class="w-4 h-4 ${gapClass}"></i>
-                ${t("reset")}
-            </button>
-            <div class="relative inline-block text-left">
-              <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
-                <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
-                ${t("export")}
-              </button>
-              <div id="export-menu" class="hidden absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-card text-foreground border border-border ring-1 ring-black ring-opacity-5 focus-visible:outline-none z-50">
-                <div class="py-1">
-                  <button id="export-csv" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors">${t("exportCSV")}</button>
-                  <button id="export-pdf" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors">${t("exportPDF")}</button>
-                </div>
-              </div>
-            </div>
-            <button id="add-service-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-9 px-4 py-2">
-              <i data-lucide="plus" class="w-4 h-4 ${gapClass}"></i>
-              ${t("add")}
-            </button>
           </div>
         </div>
 

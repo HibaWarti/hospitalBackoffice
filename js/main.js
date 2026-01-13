@@ -345,6 +345,7 @@ function renderShell(user) {
     if (!sidebar) return;
     sidebar.classList.add("hidden");
     sidebar.classList.remove("fixed", "inset-0", "z-[1002]", "w-full");
+    sidebar.classList.add("w-64");
     globalOverlay?.classList.add("hidden");
     document.body.style.overflow = "";
     updateHeaderLayout();
@@ -354,9 +355,51 @@ function renderShell(user) {
     if (!sidebar) return;
     sidebar.classList.remove("hidden");
     sidebar.classList.add("fixed", "inset-0", "z-[1002]", "w-full");
+    sidebar.classList.remove("w-64");
     globalOverlay?.classList.remove("hidden");
     document.body.style.overflow = "hidden";
     updateHeaderLayout();
+  };
+
+  const hideLangMenu = () => {
+    if (!langMenu) return;
+    langMenu.classList.add("hidden");
+    langMenu.classList.remove("fixed");
+    langMenu.classList.add("absolute", "right-0", "mt-2");
+    langMenu.style.left = "";
+    langMenu.style.top = "";
+    langMenu.style.right = "";
+    langMenu.style.maxWidth = "";
+    langMenu.style.visibility = "";
+  };
+
+  const positionLangMenu = () => {
+    if (!langMenu || !langButton) return;
+    if (langMenu.classList.contains("hidden")) return;
+
+    const btnRect = langButton.getBoundingClientRect();
+    langMenu.style.visibility = "hidden";
+
+    const menuRect = langMenu.getBoundingClientRect();
+    const mw = menuRect.width || 160;
+    const mh = menuRect.height || 160;
+
+    let top = btnRect.bottom + 8;
+    if (top + mh > window.innerHeight - 8) {
+      top = btnRect.top - mh - 8;
+    }
+    if (top < 8) top = 8;
+
+    // Align menu end with button end (right edge)
+    let left = btnRect.right - mw;
+    if (left < 8) left = 8;
+    if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+
+    langMenu.style.left = `${left}px`;
+    langMenu.style.top = `${top}px`;
+    langMenu.style.right = "auto";
+    langMenu.style.maxWidth = `${window.innerWidth - 16}px`;
+    langMenu.style.visibility = "visible";
   };
 
   function updateThemeIcon() {
@@ -449,7 +492,19 @@ function renderShell(user) {
 
   // Language Switcher
   langButton.addEventListener("click", () => {
-    langMenu.classList.toggle("hidden");
+    if (!langMenu) return;
+
+    const willOpen = langMenu.classList.contains("hidden");
+    if (!willOpen) {
+      hideLangMenu();
+      return;
+    }
+
+    langMenu.classList.remove("hidden");
+    langMenu.classList.remove("absolute", "right-0", "mt-2");
+    langMenu.classList.add("fixed");
+    positionLangMenu();
+    requestAnimationFrame(positionLangMenu);
   });
 
   themeToggle?.addEventListener('click', () => {
@@ -462,7 +517,7 @@ function renderShell(user) {
     if (!btn) return;
     const code = btn.getAttribute("data-lang");
     App.Services.I18n.setLanguage(code);
-    langMenu.classList.add("hidden");
+    hideLangMenu();
     
     // Re-render shell to update translations
     renderShell(user);
@@ -470,8 +525,15 @@ function renderShell(user) {
 
   document.addEventListener("click", (e) => {
     const insideLang = e.target.closest("#lang-button") || e.target.closest("#lang-menu");
-    if (!insideLang) langMenu.classList.add("hidden");
+    if (!insideLang) hideLangMenu();
   });
+
+  window.addEventListener("resize", () => {
+    positionLangMenu();
+  });
+  window.addEventListener("scroll", () => {
+    positionLangMenu();
+  }, { passive: true, capture: true });
 
   // Initial Page Load
   const hashKey = (window.location.hash || '').replace(/^#/, '');

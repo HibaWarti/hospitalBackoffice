@@ -42,7 +42,6 @@
     page: 1,
     itemsPerPage: 10,
     searchQuery: "",
-    filterDoctorId: "",
     filterDate: "",
     sortKey: "date",
     sortOrder: "desc",
@@ -68,16 +67,8 @@
 
   function generateHTML() {
     const prescriptions = getPrescriptions();
-    const doctors = getDoctors();
     const isRTL = document.documentElement.dir === 'rtl';
     const gapClass = isRTL ? 'ml-2' : 'mr-2';
-
-    const doctorOptions = [`<option value="">${t('doctor')}</option>`]
-      .concat(doctors.map((d) => {
-        const selected = String(prescriptionsState.filterDoctorId) === String(d.id) ? 'selected' : '';
-        return `<option value="${d.id}" ${selected}>${d.name || `${d.firstName} ${d.lastName}`}</option>`;
-      }))
-      .join('');
 
     const renderSortIcon = (key) => {
       if (prescriptionsState.sortKey !== key) return '<i data-lucide="arrow-up-down" class="w-4 h-4 ms-1 opacity-50"></i>';
@@ -95,9 +86,8 @@
         p.medications.toLowerCase().includes(query) ||
         (patient ? patient.fullName.toLowerCase().includes(query) : false) ||
         (doctor ? doctor.name.toLowerCase().includes(query) : false);
-      const matchesDoctor = prescriptionsState.filterDoctorId ? p.doctorId === prescriptionsState.filterDoctorId : true;
       const matchesDate = prescriptionsState.filterDate ? p.date === prescriptionsState.filterDate : true;
-      return matchesSearch && matchesDoctor && matchesDate;
+      return matchesSearch && matchesDate;
     });
 
     // Sort
@@ -182,48 +172,20 @@
     ` : '';
     
     return `
-      <div class="space-y-6 animate-fade-in pb-8"> <!-- Moved pb-8 here -->
+      <div class="space-y-6 animate-fade-in pb-8"> 
         <div class="flex flex-col gap-4">
-            <div class="flex items-center justify-between">
-                <h1 class="text-3xl font-heading font-bold">${t("prescriptions")}</h1>
-            </div>
-
-            <div class="flex flex-col sm:flex-row gap-4 justify-between">
-                <div class="flex flex-1 gap-2 max-w-lg">
-                    <div class="relative flex-1">
-                        <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
-                        <input
-                            type="text"
-                            id="search-input"
-                            placeholder="${t("search")}"
-                            value="${prescriptionsState.searchQuery}"
-                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                    </div>
-                    <div class="relative">
-                        <input
-                            type="date"
-                            lang="fr"
-                            id="date-filter"
-                            value="${prescriptionsState.filterDate}"
-                            class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                            placeholder="${t("date") || 'Date'}"
-                        >
-                    </div>
-                    <select id="doctor-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                      ${doctorOptions}
-                    </select>
-                </div>
-
-                <div class="flex gap-2">
-                    <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-10 px-3">
-                        <i data-lucide="rotate-ccw" class="w-4 h-4 ${gapClass}"></i>
-                        ${t("reset")}
+            <div class="flex items-center justify-between gap-3 min-w-0">
+                <h1 class="text-3xl font-heading font-bold min-w-0 truncate sm:whitespace-normal sm:overflow-visible sm:text-clip">${t("prescriptions")}</h1>
+                <div class="flex flex-nowrap gap-2 justify-end shrink-0">
+                    <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-10 px-3 whitespace-nowrap">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4 sm:${gapClass}"></i>
+                        <span class="hidden sm:inline">${t("reset")}</span>
                     </button>
+
                     <div class="relative inline-block text-left">
-                        <button id="export-menu-btn" type="button" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4">
-                            <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
-                            ${t("export")}
+                        <button id="export-menu-btn" type="button" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 whitespace-nowrap">
+                            <i data-lucide="download" class="w-4 h-4 sm:${gapClass}"></i>
+                            <span class="hidden sm:inline">${t("export")}</span>
                         </button>
                         <div id="export-menu" class="hidden absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card text-foreground border border-border ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                             <div class="py-1">
@@ -236,11 +198,38 @@
                             </div>
                         </div>
                     </div>
-                    <button id="add-prescription-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4">
-                        <i data-lucide="plus" class="w-4 h-4 ${gapClass}"></i>
-                        ${t("add")}
+                    <button id="add-prescription-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-primary text-primary-foreground hover:bg-primary/90 h-10 py-2 px-4 whitespace-nowrap">
+                        <i data-lucide="plus" class="w-4 h-4 sm:${gapClass}"></i>
+                        <span class="hidden sm:inline">${t("add")}</span>
                     </button>
                 </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 justify-between flex-wrap">
+                <div class="flex flex-1 flex-wrap gap-2 w-full sm:max-w-lg">
+                    <div class="relative flex-1">
+                        <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                        <input
+                            type="text"
+                            id="search-input"
+                            placeholder="${t("search") }"
+                            value="${prescriptionsState.searchQuery}"
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 ${isRTL ? 'pr-10' : 'pl-10'} text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                    </div>
+
+                    <div class="relative">
+                        <input
+                            type="date"
+                            lang="fr"
+                            id="date-filter"
+                            value="${prescriptionsState.filterDate}"
+                            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            placeholder="${t("date") || 'Date'}"
+                        >
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -251,9 +240,6 @@
                 <tr class="${isRTL ? 'text-right' : 'text-left'}">
                   <th class="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="patientName">
                     <div class="flex items-center">${t("patient")} ${renderSortIcon('patientName')}</div>
-                  </th>
-                  <th class="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="doctorName">
-                    <div class="flex items-center">${t("doctor")} ${renderSortIcon('doctorName')}</div>
                   </th>
                   <th class="h-12 px-4 align-middle font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors" data-sort="medications">
                     <div class="flex items-center">${t("medications")} ${renderSortIcon('medications')}</div>
@@ -277,7 +263,6 @@
                   return `
                   <tr data-id="${p.id}" class="hover:bg-muted/50 transition-colors">
                     <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${patientName}</td>
-                    <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${doctorName}</td>
                     <td class="p-4 align-middle font-medium text-foreground ${isRTL ? 'text-right' : 'text-left'}">${p.medications}</td>
                     <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${p.dosage || '-'}</td>
                     <td class="p-4 align-middle ${isRTL ? 'text-right' : 'text-left'}">${formatDateDMY(date)}</td>
@@ -304,7 +289,7 @@
                   </tr>
                 `;}).join('') : `
                   <tr>
-                    <td colspan="6" class="p-8 text-center text-muted-foreground">
+                    <td colspan="5" class="p-8 text-center text-muted-foreground">
                       ${t("noPrescriptions")}
                     </td>
                   </tr>
@@ -561,20 +546,10 @@
       });
     }
 
-    const doctorFilter = container.querySelector('#doctor-filter');
-    if (doctorFilter) {
-      doctorFilter.addEventListener('change', (e) => {
-        prescriptionsState.filterDoctorId = e.target.value;
-        prescriptionsState.page = 1;
-        updateContent(container);
-      });
-    }
-
     const resetBtn = container.querySelector('#reset-filters-btn');
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
             prescriptionsState.searchQuery = "";
-            prescriptionsState.filterDoctorId = "";
             prescriptionsState.filterDate = "";
             prescriptionsState.sortKey = null;
             prescriptionsState.sortOrder = "desc";
@@ -593,9 +568,8 @@
           String(p.medications || '').toLowerCase().includes(query) ||
           (patient ? String(patient.fullName || '').toLowerCase().includes(query) : false) ||
           (doctor ? String(doctor.name || '').toLowerCase().includes(query) : false);
-        const matchesDoctor = prescriptionsState.filterDoctorId ? p.doctorId === prescriptionsState.filterDoctorId : true;
         const matchesDate = prescriptionsState.filterDate ? p.date === prescriptionsState.filterDate : true;
-        return matchesSearch && matchesDoctor && matchesDate;
+        return matchesSearch && matchesDate;
       }).length;
     };
 

@@ -45,7 +45,6 @@
     isModalOpen: false,
     editingId: null,
     viewingId: null,
-    filterDoctorId: "",
     filterStatus: "",
     filterDate: ""
   };
@@ -80,7 +79,6 @@
   function generateHTML() {
     const allAppointments = getAppointments();
     const patients = getPatients();
-    const doctors = getDoctors();
     const services = getServices();
     const isRTL = document.documentElement.dir === 'rtl';
     const gapClass = isRTL ? 'ml-2' : 'mr-2';
@@ -100,13 +98,6 @@
         };
     });
 
-    const doctorOptions = [`<option value="">${t('doctor')}</option>`]
-      .concat(doctors.map((d) => {
-        const selected = String(appointmentsState.filterDoctorId) === String(d.id) ? 'selected' : '';
-        return `<option value="${d.id}" ${selected}>${d.firstName} ${d.lastName}</option>`;
-      }))
-      .join('');
-
     // Filter
     let filteredAppointments = enrichedAppointments.filter(app => {
       const searchLower = appointmentsState.search.toLowerCase();
@@ -115,10 +106,9 @@
         app.doctorName.toLowerCase().includes(searchLower) ||
         app.status.toLowerCase().includes(searchLower)
       );
-      const matchesDoctor = appointmentsState.filterDoctorId ? String(app.doctorId) === String(appointmentsState.filterDoctorId) : true;
       const matchesStatus = appointmentsState.filterStatus ? String(app.status) === String(appointmentsState.filterStatus) : true;
       const matchesDate = appointmentsState.filterDate ? app.date === appointmentsState.filterDate : true;
-      return matchesSearch && matchesDoctor && matchesStatus && matchesDate;
+      return matchesSearch && matchesStatus && matchesDate;
     });
 
     // Sort
@@ -292,11 +282,35 @@
 
     return `
       <div class="space-y-6 animate-fade-in">
-        <h1 class="text-3xl font-heading font-bold">${t("appointments")}</h1>
-        
+        <div class="flex items-center justify-between gap-3 min-w-0">
+          <h1 class="text-3xl font-heading font-bold min-w-0 truncate sm:whitespace-normal sm:overflow-visible sm:text-clip">${t("appointments")}</h1>
+          <div class="flex flex-nowrap gap-2 justify-end shrink-0">
+            <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-10 px-3 whitespace-nowrap">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 sm:${gapClass}"></i>
+                <span class="hidden sm:inline">${t("reset")}</span>
+            </button>
+            <div class="relative inline-block text-left">
+              <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 whitespace-nowrap">
+                <i data-lucide="download" class="w-4 h-4 sm:${gapClass}"></i>
+                <span class="hidden sm:inline">${t("export")}</span>
+              </button>
+              <div id="export-menu" class="hidden absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-card text-foreground border border-border ring-1 ring-black ring-opacity-5 focus-visible:outline-none z-50">
+                <div class="py-1">
+                  <button id="export-csv" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors">${t("exportCSV")}</button>
+                  <button id="export-pdf" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors">${t("exportPDF")}</button>
+                </div>
+              </div>
+            </div>
+            <button id="add-appointment-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-10 px-4 py-2 whitespace-nowrap">
+              <i data-lucide="plus" class="w-4 h-4 sm:${gapClass}"></i>
+              <span class="hidden sm:inline">${t("add")}</span>
+            </button>
+          </div>
+        </div>
+
         <div class="flex flex-col sm:flex-row gap-4 justify-between">
-          <div class="flex flex-1 gap-2">
-            <div class="relative flex-1">
+          <div class="grid grid-cols-2 gap-2 sm:flex sm:flex-1 sm:flex-wrap sm:gap-2">
+            <div class="relative flex-1 col-span-2 sm:col-span-1">
               <i data-lucide="search" class="absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
               <input 
                 type="text" 
@@ -311,40 +325,15 @@
               lang="fr"
               id="date-filter"
               value="${appointmentsState.filterDate}"
-              class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              class="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               placeholder="${t("date") || 'Date'}"
             >
-            <select id="doctor-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              ${doctorOptions}
-            </select>
-            <select id="status-filter" class="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+            <select id="status-filter" class="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
               <option value="">${t("status")}</option>
               <option value="scheduled">${t("scheduled")}</option>
               <option value="completed">${t("completed")}</option>
               <option value="cancelled">${t("cancelled")}</option>
             </select>
-          </div>
-          <div class="flex gap-2">
-            <button id="reset-filters-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-10 px-3">
-                <i data-lucide="rotate-ccw" class="w-4 h-4 ${gapClass}"></i>
-                ${t("reset")}
-            </button>
-            <div class="relative inline-block text-left">
-              <button id="export-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
-                <i data-lucide="download" class="w-4 h-4 ${gapClass}"></i>
-                ${t("export")}
-              </button>
-              <div id="export-menu" class="hidden absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-card text-foreground border border-border ring-1 ring-black ring-opacity-5 focus-visible:outline-none z-50">
-                <div class="py-1">
-                  <button id="export-csv" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors">${t("exportCSV")}</button>
-                  <button id="export-pdf" class="w-[calc(100%-8px)] mx-1 my-1 rounded-md px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground transition-colors">${t("exportPDF")}</button>
-                </div>
-              </div>
-            </div>
-            <button id="add-appointment-btn" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-white hover:bg-primary/90 h-10 px-4 py-2">
-              <i data-lucide="plus" class="w-4 h-4 ${gapClass}"></i>
-              ${t("add")}
-            </button>
           </div>
         </div>
 
@@ -621,14 +610,6 @@
     }
     
     // Filters
-    const doctorFilter = container.querySelector("#doctor-filter");
-    if (doctorFilter) {
-        doctorFilter.addEventListener("change", (e) => {
-            appointmentsState.filterDoctorId = e.target.value;
-            appointmentsState.page = 1;
-            updateContent(container);
-        });
-    }
     const statusFilter = container.querySelector("#status-filter");
     if (statusFilter) {
         statusFilter.addEventListener("change", (e) => {
@@ -650,7 +631,6 @@
     if (resetBtn) {
         resetBtn.addEventListener("click", () => {
             appointmentsState.search = "";
-            appointmentsState.filterDoctorId = "";
             appointmentsState.filterStatus = "";
             appointmentsState.filterDate = "";
             appointmentsState.sortKey = null;
