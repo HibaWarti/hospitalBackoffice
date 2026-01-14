@@ -26,6 +26,7 @@
   function getDoctors() { return App.Services.Data.getDoctors(); }
   function getPatient(id) { return App.Services.Data.getPatient(id); }
   function getDoctor(id) { return App.Services.Data.getDoctor(id); }
+  function getAppointments() { return App.Services.Data.getAppointments(); }
   
   function t(key) { return App.Services.I18n.t(key); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
@@ -46,7 +47,8 @@
     filterDate: "",
     sortKey: "date",
     sortOrder: "desc",
-    activeMenuId: null
+    activeMenuId: null,
+    viewingId: null
   };
 
   let activeMenuAnchor = null;
@@ -708,86 +710,110 @@
 
     // View PDF Export
     container.querySelector('#view-export-pdf')?.addEventListener('click', () => {
-         const patientName = container.querySelector('#view-patient')?.innerText;
-         const doctorName = container.querySelector('#view-doctor')?.innerText;
-         const date = container.querySelector('#view-date')?.innerText;
-         const dosage = container.querySelector('#view-dosage')?.innerText;
-         const medications = container.querySelector('#view-medications')?.innerText;
+         const prescription = prescriptionsState.viewingId ? getPrescription(prescriptionsState.viewingId) : null;
+         if (!prescription) return;
 
-         const safePatient = String(patientName || '').trim().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
-         const safeDate = String(date || '').trim().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
-         const baseName = (`prescription_${safePatient}_${safeDate}`.replace(/_+/g, '_')).replace(/^_+|_+$/g, '') || 'prescription';
+         const patient = prescription.patientId ? getPatient(prescription.patientId) : null;
+         const doctor = prescription.doctorId ? getDoctor(prescription.doctorId) : null;
+         const patientName = patient ? (patient.fullName || `${patient.firstName} ${patient.lastName}`) : (container.querySelector('#view-patient')?.innerText || '');
+         const doctorName = doctor ? (doctor.name || `${doctor.firstName} ${doctor.lastName}`) : (container.querySelector('#view-doctor')?.innerText || '');
+         const date = formatDateDMY(prescription.date || prescription.prescriptionDate || '');
 
-         exportReportToPDF({
-           filename: baseName,
-           title: t('prescriptionDetails') || t('prescription') || 'Prescription',
-           subtitle: String(patientName || '').trim(),
-           fields: [
-             { label: t('patient'), value: patientName },
-             { label: t('doctor'), value: doctorName },
-             { label: t('date'), value: date },
-             { label: t('dosage'), value: dosage },
-             { label: t('medications'), value: medications },
-           ]
-         });
+         const allAppointments = getAppointments();
+         const patientAppointments = patient ? allAppointments.filter((a) => a && a.patientId === patient.id) : [];
+         const doctorAppointments = doctor ? allAppointments.filter((a) => a && a.doctorId === doctor.id) : [];
+
+    const safePatient = String(patientName || '').trim().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
+    const safeDate = String(date || '').trim().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
+    const baseName = (`prescription_${safePatient}_${safeDate}`.replace(/_+/g, '_')).replace(/^_+|_+$/g, '') || 'prescription';
+
+    exportReportToPDF({
+      filename: baseName,
+      title: t('prescriptionDetails') || t('prescription') || 'Prescription',
+      headerSubtitle: 'Hospital Backoffice System',
+      sections: [
+        {
+          title: t('prescriptionInformation') || 'Prescription Information',
+          fields: [
+            { label: t('date'), value: date },
+            { label: t('dosage'), value: prescription.dosage },
+            { label: t('duration') || 'Duration', value: prescription.duration || '-' },
+            { label: t('medications'), value: prescription.medications },
+          ]
+        },
+        {
+          title: t('participants') || 'Participants',
+          fields: [
+            { label: t('patient'), value: patientName },
+            { label: t('doctor'), value: doctorName },
+          ]
+        },
+        {
+          title: t('statistics') || 'Statistics',
+          fields: [
+            { label: (t('appointments') || 'Appointments') + ` (${t('patient') || 'Patient'})`, value: patientAppointments.length },
+            { label: (t('appointments') || 'Appointments') + ` (${t('doctor') || 'Doctor'})`, value: doctorAppointments.length },
+          ]
+        },
+      ]
+    });
     });
 
-    // Row Menu Actions (Delegation)
-    container.querySelectorAll('button[data-action="menu"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const id = btn.getAttribute('data-id');
-        const menu = document.getElementById(`prescription-menu-${id}`);
-        
-        // Close others
-        if (prescriptionsState.activeMenuId && prescriptionsState.activeMenuId !== id) {
-            const el = document.getElementById(`prescription-menu-${prescriptionsState.activeMenuId}`);
-            if (el) el.classList.add('hidden');
-        }
+// Row Menu Actions (Delegation)
+container.querySelectorAll('button[data-action="menu"]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const id = btn.getAttribute('data-id');
+    const menu = document.getElementById(`prescription-menu-${id}`);
+    
+    // Close others
+    if (prescriptionsState.activeMenuId && prescriptionsState.activeMenuId !== id) {
+        const el = document.getElementById(`prescription-menu-${prescriptionsState.activeMenuId}`);
+        if (el) el.classList.add('hidden');
+    }
 
-        if (menu) {
-          const btnRect = btn.getBoundingClientRect();
-          const isRTL = document.documentElement.dir === 'rtl';
-          const cb = getFixedContainingBlock(menu);
-          const cbRect = cb ? cb.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
-          const viewportW = cb ? cbRect.width : window.innerWidth;
-          const viewportH = cb ? cbRect.height : window.innerHeight;
-          menu.classList.remove('hidden');
-          menu.style.visibility = 'hidden';
-          menu.style.top = `${btnRect.bottom + 8 - cbRect.top}px`;
-          menu.style.left = `${(isRTL ? btnRect.left : btnRect.right - 192) - cbRect.left}px`; // 192px ~ w-48
-          // Measure then adjust for viewport overflow
-          requestAnimationFrame(() => {
-            const mw = menu.offsetWidth;
-            const mh = menu.offsetHeight;
-            let top = btnRect.bottom + 8 - cbRect.top;
-            if (top + mh > viewportH) {
-              top = btnRect.top - mh - 8 - cbRect.top;
-            }
-            let left = (isRTL ? btnRect.left : btnRect.right - mw) - cbRect.left;
-            if (left < 8) left = 8;
-            if (left + mw > viewportW - 8) left = viewportW - mw - 8;
-            menu.style.top = `${top}px`;
-            menu.style.left = `${left}px`;
-            menu.style.visibility = 'visible';
-            activeMenuAnchor = btn;
-            activeMenuEl = menu;
-          });
-          
-          prescriptionsState.activeMenuId = id;
+    if (menu) {
+      const btnRect = btn.getBoundingClientRect();
+      const isRTL = document.documentElement.dir === 'rtl';
+      const cb = getFixedContainingBlock(menu);
+      const cbRect = cb ? cb.getBoundingClientRect() : { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
+      const viewportW = cb ? cbRect.width : window.innerWidth;
+      const viewportH = cb ? cbRect.height : window.innerHeight;
+      menu.classList.remove('hidden');
+      menu.style.visibility = 'hidden';
+      menu.style.top = `${btnRect.bottom + 8 - cbRect.top}px`;
+      menu.style.left = `${(isRTL ? btnRect.left : btnRect.right - 192) - cbRect.left}px`; // 192px ~ w-48
+      // Measure then adjust for viewport overflow
+      requestAnimationFrame(() => {
+        const mw = menu.offsetWidth;
+        const mh = menu.offsetHeight;
+        let top = btnRect.bottom + 8 - cbRect.top;
+        if (top + mh > viewportH) {
+          top = btnRect.top - mh - 8 - cbRect.top;
         }
+        let left = (isRTL ? btnRect.left : btnRect.right - mw) - cbRect.left;
+        if (left < 8) left = 8;
+        if (left + mw > viewportW - 8) left = viewportW - mw - 8;
+        menu.style.top = `${top}px`;
+        menu.style.left = `${left}px`;
+        menu.style.visibility = 'visible';
+        activeMenuAnchor = btn;
+        activeMenuEl = menu;
+        prescriptionsState.activeMenuId = id;
       });
-    });
+    }
+  });
+});
 
-    // Menu item clicks (Edit/View/Delete)
-    // Since menus are re-rendered, we can attach listeners to the container
-    // asking if click target is inside a menu button
-    container.addEventListener('click', (e) => {
-        const actionBtn = e.target.closest('button[data-action]');
-        if (!actionBtn) return;
+// Menu item clicks (Edit/View/Delete)
+// Since menus are re-rendered, we can attach listeners to the container
+// asking if click target is inside a menu button
+container.addEventListener('click', (e) => {
+    const actionBtn = e.target.closest('button[data-action]');
+    if (!actionBtn) return;
 
-        const action = actionBtn.getAttribute('data-action');
-        const id = actionBtn.getAttribute('data-id');
+    const action = actionBtn.getAttribute('data-action');
+    const id = actionBtn.getAttribute('data-id');
 
         // Close menu when an action is clicked
         const menu = container.querySelector(`#prescription-menu-${id}`);
@@ -800,6 +826,8 @@
             if (p) {
                 const patient = getPatient(p.patientId);
                 const doctor = getDoctor(p.doctorId);
+
+                prescriptionsState.viewingId = id;
 
                 container.querySelector('#view-patient').innerText = patient ? patient.fullName : t('unknown');
                 container.querySelector('#view-doctor').innerText = doctor ? doctor.name : t('unknown');

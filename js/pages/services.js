@@ -4,6 +4,9 @@
   function addService(s) { return App.Services.Data.addService(s); }
   function updateService(id, updates) { return App.Services.Data.updateService(id, updates); }
   function deleteService(id) { return App.Services.Data.deleteService(id); }
+  function getDoctors() { return App.Services.Data.getDoctors(); }
+  function getPatients() { return App.Services.Data.getPatients(); }
+  function getAppointments() { return App.Services.Data.getAppointments(); }
   function t(key) { return App.Services.I18n.t(key); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
@@ -651,14 +654,34 @@
                     `;
                     container.querySelector("#export-detail-pdf-btn")?.addEventListener("click", () => {
                         const baseName = `service_${String(service.name || '').trim()}`.replace(/\s+/g, '_').replace(/[^\w\-]/g, '') || 'service';
+
+                        const doctors = getDoctors().filter((d) => d && d.serviceId === service.id);
+                        const patients = getPatients().filter((p) => p && p.serviceId === service.id);
+                        const appointments = getAppointments().filter((a) => a && a.serviceId === service.id);
+                        const headDoctor = service.headDoctorId ? doctors.find((d) => d.id === service.headDoctorId) : null;
+
                         exportReportToPDF({
                           filename: baseName,
                           title: t('serviceDetails') || t('service') || 'Service',
-                          subtitle: String(service.name || '').trim(),
-                          fields: [
-                            { label: t('name'), value: service.name },
-                            { label: t('description'), value: service.description || '-' },
-                            { label: t('specialties'), value: Array.isArray(service.specialties) ? service.specialties.join(', ') : '' },
+                          headerSubtitle: 'Hospital Backoffice System',
+                          sections: [
+                            {
+                              title: t('serviceInformation') || 'Service Information',
+                              fields: [
+                                { label: t('name'), value: service.name },
+                                { label: t('description'), value: service.description || '-' },
+                                { label: t('specialties'), value: Array.isArray(service.specialties) ? service.specialties.join(', ') : '' },
+                                { label: t('headDoctor') || 'Head Doctor', value: headDoctor ? headDoctor.name : '-' },
+                              ]
+                            },
+                            {
+                              title: t('statistics') || 'Statistics',
+                              fields: [
+                                { label: t('doctors') || 'Doctors', value: doctors.length },
+                                { label: t('patients') || 'Patients', value: patients.length },
+                                { label: t('appointments') || 'Appointments', value: appointments.length },
+                              ]
+                            }
                           ]
                         });
                     });

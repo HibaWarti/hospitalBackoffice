@@ -5,6 +5,9 @@ function getServices() { return App.Services.Data.getServices(); }
 function getAppointments() { return App.Services.Data.getAppointments(); }
 function getPrescriptions() { return App.Services.Data.getPrescriptions(); }
 
+ function t(key) { return App.Services.I18n.t(key); }
+ function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+
  const dashboardCharts = {
   patientsByService: null,
   appointmentsByDay: null,
@@ -130,10 +133,22 @@ function renderDashboard(container, baseData, currentLang) {
     statusCounts,
   } = buildDashboardData(baseData);
 
+  const isRTL = document.documentElement.dir === 'rtl';
+  const gapClass = isRTL ? 'ml-2' : 'mr-2';
+
   container.innerHTML = `
-    <div>
-      <h1 class="text-3xl font-heading font-bold">${t("dashboard")}</h1>
-      <p class="text-muted-foreground mt-1">${t("welcome")}</p>
+    <div class="grid grid-cols-[1fr_auto] gap-3 items-center">
+      <div class="min-w-0">
+        <h1 class="text-3xl font-heading font-bold min-w-0 truncate sm:whitespace-normal sm:overflow-visible sm:text-clip">${t("dashboard")}</h1>
+        <p class="text-muted-foreground mt-1">${t("welcome")}</p>
+      </div>
+
+      <div class="flex flex-nowrap gap-2 justify-end shrink-0">
+        <button id="dashboard-export-pdf" class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground h-9 px-3 whitespace-nowrap">
+          <i data-lucide="download" class="w-4 h-4 sm:${gapClass}"></i>
+          <span class="hidden sm:inline">${t("exportPDF")}</span>
+        </button>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="stats-grid"></div>
@@ -211,6 +226,28 @@ function renderDashboard(container, baseData, currentLang) {
 
   if (window.lucide) {
     window.lucide.createIcons({ root: container });
+  }
+
+  // Dashboard report export
+  const exportBtn = container.querySelector('#dashboard-export-pdf');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      const pad = (n) => String(n).padStart(2, '0');
+      const now = new Date();
+      const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+
+      // 1) Stats table
+      const statsRows = stats.map((s) => ({ label: s.key, value: s.value }));
+      exportToPDF(
+        statsRows,
+        `dashboard_report_${ts}`,
+        t('dashboard') || 'Dashboard',
+        [
+          { key: 'label', header: t('metric') || 'Metric' },
+          { key: 'value', header: t('value') || 'Value' },
+        ]
+      );
+    });
   }
 
   setTimeout(() => {

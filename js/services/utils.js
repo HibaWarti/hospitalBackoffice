@@ -162,82 +162,82 @@ function exportToCSV(data, filename, columns) {
 }
 
 function exportToPDF(data, filename, title, columns) {
-  // Use HTML rendering for better font support (Arabic) and consistency
-  const wrapper = document.createElement('div');
-  wrapper.style.position = 'absolute';
-  wrapper.style.left = '-9999px';
-  wrapper.style.top = '0';
-  wrapper.style.width = '800px';
-  wrapper.style.padding = '40px';
-  wrapper.style.background = 'white';
-  wrapper.style.color = 'black';
-  wrapper.style.fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"';
-  wrapper.dir = document.documentElement.dir || 'ltr';
+  if (!window.jspdf) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+  const isRTL = document.documentElement.dir === 'rtl';
 
-  const h1 = document.createElement('h1');
-  h1.innerText = title;
-  h1.style.marginBottom = '10px';
-  wrapper.appendChild(h1);
+  const pad = (n) => String(n).padStart(2, '0');
+  const now = new Date();
+  const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
 
-  const p = document.createElement('p');
-  p.innerText = `${t('generatedOn')}: ${new Date().toLocaleString()}`;
-  p.style.marginBottom = '20px';
-  p.style.fontSize = '12px';
-  p.style.color = '#666';
-  wrapper.appendChild(p);
+  doc.setFontSize(18);
+  doc.text(String(title || ''), 14, 20, { align: isRTL ? 'right' : 'left' });
+  doc.setFontSize(10);
+  doc.setTextColor(107, 114, 128);
+  doc.text(`${t('generatedOn')}: ${now.toLocaleString()}`, isRTL ? 196 : 14, 27, { align: isRTL ? 'right' : 'left' });
+  doc.setTextColor(0, 0, 0);
 
-  const table = document.createElement('table');
-  table.style.width = '100%';
-  table.style.borderCollapse = 'collapse';
-  table.style.fontSize = '12px';
-
-  // Header
-  const thead = document.createElement('thead');
-  const trHead = document.createElement('tr');
-  trHead.style.background = '#0ea5e9';
-  trHead.style.color = 'white';
-  
-  columns.forEach(col => {
-    const th = document.createElement('th');
-    th.innerText = (typeof col === 'object' && col.header) ? col.header : col;
-    th.style.padding = '8px';
-    th.style.border = '1px solid #ddd';
-    th.style.textAlign = 'left';
-    if (document.documentElement.dir === 'rtl') th.style.textAlign = 'right';
-    trHead.appendChild(th);
-  });
-  thead.appendChild(trHead);
-  table.appendChild(thead);
-
-  // Body
-  const tbody = document.createElement('tbody');
-  data.forEach((item, index) => {
-    const tr = document.createElement('tr');
-    tr.style.background = index % 2 === 0 ? '#fff' : '#f9fafb';
-    columns.forEach(col => {
-      const td = document.createElement('td');
+  const head = [columns.map((col) => (typeof col === 'object' && col.header) ? String(col.header) : String(col))];
+  const body = data.map((item) =>
+    columns.map((col) => {
       const key = (typeof col === 'object' && col.key) ? col.key : col;
-      td.innerText = item[key] ?? '';
-      td.style.padding = '8px';
-      td.style.border = '1px solid #ddd';
-      tr.appendChild(td);
-    });
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  wrapper.appendChild(table);
+      return String((item && item[key] != null) ? item[key] : '');
+    })
+  );
 
-  document.body.appendChild(wrapper);
+  const autoTableFn = doc.autoTable || (doc && doc.constructor && doc.constructor.API && doc.constructor.API.autoTable);
+  if (typeof autoTableFn !== 'function') {
+    doc.save(`${filename}_${ts}.pdf`);
+    return;
+  }
 
-  exportElementToPDF(wrapper, filename, { raw: true }).finally(() => {
-    document.body.removeChild(wrapper);
+  doc.autoTable({
+    head,
+    body,
+    startY: 32,
+    styles: {
+      fontSize: 8,
+      cellPadding: 2.2,
+      lineWidth: 0,
+      halign: isRTL ? 'right' : 'left',
+      valign: 'middle',
+    },
+    headStyles: {
+      fillColor: [14, 165, 233],
+      textColor: 255,
+      lineWidth: 0,
+      fontStyle: 'bold',
+    },
+    bodyStyles: {
+      lineWidth: 0,
+      textColor: [17, 24, 39],
+    },
+    alternateRowStyles: {
+      fillColor: [249, 250, 251],
+    },
+    margin: { left: 14, right: 14 },
+    theme: 'plain',
   });
+
+  doc.save(`${filename}_${ts}.pdf`);
 }
 
 function exportDetailsToPDF(data, filename, title, fields) {
    // Legacy wrapper
    if (!window.jspdf) return;
-   exportToPDF([data], filename, title, fields);
+   const mapped = Array.isArray(fields)
+     ? fields.map((f) => {
+         const key = (f && typeof f === 'object' && f.key != null) ? f.key : null;
+         const label = (f && typeof f === 'object' && f.header != null) ? f.header : (key != null ? String(key) : '');
+         return { label, value: key != null ? (data ? data[key] : '') : '' };
+       })
+     : [];
+   exportReportToPDF({
+     filename,
+     title,
+     fields: mapped,
+   });
 }
 
 function exportReportToPDF(options) {
@@ -247,128 +247,125 @@ function exportReportToPDF(options) {
   const subtitle = opts.subtitle || '';
   const fields = Array.isArray(opts.fields) ? opts.fields : [];
   const sections = Array.isArray(opts.sections) ? opts.sections : [];
+  if (!window.jspdf) return Promise.resolve();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+  const isRTL = document.documentElement.dir === 'rtl';
 
-  const wrapper = document.createElement('div');
-  wrapper.style.position = 'absolute';
-  wrapper.style.left = '-9999px';
-  wrapper.style.top = '0';
-  wrapper.style.width = '800px';
-  wrapper.style.padding = '56px';
-  wrapper.style.background = '#ffffff';
-  wrapper.style.color = '#000000';
-  wrapper.style.fontFamily = 'system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji"';
-  wrapper.dir = document.documentElement.dir || 'ltr';
-
-  const style = document.createElement('style');
-  style.innerHTML = `
-    .pdf-report-root, .pdf-report-root * {
-      box-sizing: border-box;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-      text-shadow: none !important;
-      filter: none !important;
-    }
-    .pdf-report-root { color: #000000; }
-    .pdf-report-root * { color: #000000 !important; opacity: 1 !important; }
-  `;
-  wrapper.className = 'pdf-report-root';
-  wrapper.appendChild(style);
-
-  const h1 = document.createElement('h1');
-  h1.innerText = title;
-  h1.style.margin = '0 0 6px 0';
-  h1.style.fontSize = '22px';
-  h1.style.fontWeight = '700';
-  wrapper.appendChild(h1);
-
-  if (subtitle) {
-    const sub = document.createElement('div');
-    sub.innerText = subtitle;
-    sub.style.marginBottom = '10px';
-    sub.style.fontSize = '13px';
-    sub.style.color = '#374151';
-    wrapper.appendChild(sub);
+  const autoTableFn = doc.autoTable || (doc && doc.constructor && doc.constructor.API && doc.constructor.API.autoTable);
+  if (typeof autoTableFn !== 'function') {
+    doc.save(`${filename}.pdf`);
+    return Promise.resolve();
   }
 
-  const meta = document.createElement('div');
-  meta.innerText = `${t('generatedOn')}: ${new Date().toLocaleString()}`;
-  meta.style.marginBottom = '18px';
-  meta.style.fontSize = '12px';
-  meta.style.color = '#6b7280';
-  wrapper.appendChild(meta);
+  const primary = [0, 123, 255];
+  const marginX = 14;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const centerX = pageW / 2;
 
-  const card = document.createElement('div');
-  card.style.border = '1px solid #e5e7eb';
-  card.style.borderRadius = '12px';
-  card.style.padding = '28px';
-  card.style.background = '#ffffff';
-  wrapper.appendChild(card);
+  const headerSubtitle = (opts.headerSubtitle != null && String(opts.headerSubtitle).trim())
+    ? String(opts.headerSubtitle).trim()
+    : (subtitle || 'Hospital Backoffice System');
+  const footerText = (opts.footerText != null && String(opts.footerText).trim())
+    ? String(opts.footerText).trim()
+    : `Generated by Hospital Backoffice – ${new Date().getFullYear()}`;
 
-  const renderFields = (target, items) => {
-    const grid = document.createElement('div');
-    grid.style.display = 'grid';
-    grid.style.gridTemplateColumns = '1fr 1fr';
-    grid.style.gap = '14px 18px';
-    target.appendChild(grid);
+  const now = new Date();
+  doc.setFontSize(18);
+  doc.setTextColor(primary[0], primary[1], primary[2]);
+  doc.text(String(title || ''), centerX, 18, { align: 'center' });
+  doc.setFontSize(11);
+  doc.setTextColor(55, 65, 81);
+  doc.text(String(headerSubtitle), centerX, 24, { align: 'center' });
+  doc.setFontSize(10);
+  doc.setTextColor(107, 114, 128);
+  doc.text(`${t('generatedOn')}: ${now.toLocaleString()}`, centerX, 29, { align: 'center' });
+  doc.setDrawColor(primary[0], primary[1], primary[2]);
+  doc.setLineWidth(0.6);
+  doc.line(marginX, 32, pageW - marginX, 32);
 
-    items.forEach((f) => {
-      const label = (f && f.label != null) ? String(f.label) : '';
-      const value = (f && f.value != null) ? String(f.value) : '-';
+  doc.setTextColor(0, 0, 0);
 
-      const cell = document.createElement('div');
-      cell.style.minWidth = '0';
+  const mapFields = (items) => (Array.isArray(items) ? items : []).map((f) => [
+    (f && f.label != null) ? String(f.label) : '',
+    (f && f.value != null) ? String(f.value) : '-',
+  ]);
 
-      const l = document.createElement('div');
-      l.innerText = label;
-      l.style.fontSize = '12px';
-      l.style.color = '#6b7280';
-      l.style.marginBottom = '4px';
+  const normalizedSections = (() => {
+    const s = Array.isArray(sections) ? sections.filter(Boolean) : [];
+    if (s.length > 0) return s;
+    if (fields.length > 0) return [{ title: 'Details', fields }];
+    return [];
+  })();
 
-      const v = document.createElement('div');
-      v.innerText = value;
-      v.style.fontSize = '14px';
-      v.style.fontWeight = '600';
-      v.style.wordBreak = 'break-word';
+  let y = 38;
 
-      cell.appendChild(l);
-      cell.appendChild(v);
-      grid.appendChild(cell);
-    });
-  };
+  normalizedSections.forEach((section) => {
+    const sectionTitle = section && section.title != null ? String(section.title) : '';
+    const sectionFields = mapFields(section && section.fields);
+    if (!sectionTitle && sectionFields.length === 0) return;
 
-  if (fields.length > 0) {
-    renderFields(card, fields);
-  }
-
-  sections.forEach((section) => {
-    const titleText = section && section.title != null ? String(section.title) : '';
-    const items = Array.isArray(section?.fields) ? section.fields : [];
-    if (!titleText && items.length === 0) return;
-
-    const hr = document.createElement('div');
-    hr.style.height = '1px';
-    hr.style.background = '#e5e7eb';
-    hr.style.margin = '18px 0';
-    card.appendChild(hr);
-
-    if (titleText) {
-      const h2 = document.createElement('h2');
-      h2.innerText = titleText;
-      h2.style.fontSize = '14px';
-      h2.style.fontWeight = '700';
-      h2.style.margin = '0 0 10px 0';
-      card.appendChild(h2);
+    if (sectionTitle) {
+      doc.autoTable({
+        head: [[sectionTitle]],
+        body: [],
+        startY: y,
+        theme: 'plain',
+        styles: {
+          fontSize: 12,
+          cellPadding: { top: 3, right: 4, bottom: 3, left: 4 },
+          lineWidth: 0,
+          halign: isRTL ? 'right' : 'left',
+          valign: 'middle',
+        },
+        headStyles: {
+          fillColor: primary,
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        margin: { left: marginX, right: marginX },
+      });
+      y = doc.lastAutoTable ? doc.lastAutoTable.finalY : y;
     }
 
-    if (items.length > 0) {
-      renderFields(card, items);
+    if (sectionFields.length > 0) {
+      doc.autoTable({
+        head: [],
+        body: sectionFields,
+        startY: y,
+        theme: 'grid',
+        styles: {
+          fontSize: 10,
+          cellPadding: { top: 3, right: 4, bottom: 3, left: 4 },
+          lineColor: [204, 204, 204],
+          lineWidth: 0.2,
+          halign: isRTL ? 'right' : 'left',
+          valign: 'top',
+          textColor: [17, 24, 39],
+        },
+        columnStyles: {
+          0: { cellWidth: 60, fontStyle: 'bold' },
+          1: { fontStyle: 'normal' },
+        },
+        margin: { left: marginX, right: marginX },
+      });
+      y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : y + 10;
+    } else {
+      y += 8;
     }
   });
 
-  document.body.appendChild(wrapper);
-  return exportElementToPDF(wrapper, filename, { raw: true }).finally(() => {
-    if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
-  });
+  const pages = doc.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(10);
+    doc.setTextColor(128, 128, 128);
+    doc.text(String(footerText), centerX, pageH - 10, { align: 'center' });
+  }
+
+  doc.save(`${filename}.pdf`);
+  return Promise.resolve();
 }
 
 function exportElementToPDF(element, filename, options) {

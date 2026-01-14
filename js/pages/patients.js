@@ -5,6 +5,8 @@ function addPatient(p) { return App.Services.Data.addPatient(p); }
 function updatePatient(id, updates) { return App.Services.Data.updatePatient(id, updates); }
 function deletePatient(id) { return App.Services.Data.deletePatient(id); }
 function getServices() { return App.Services.Data.getServices(); }
+function getAppointments() { return App.Services.Data.getAppointments(); }
+function getPrescriptions() { return App.Services.Data.getPrescriptions(); }
 function t(key) { return App.Services.I18n.t(key); }
 function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
 function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
@@ -618,18 +620,46 @@ function attachListeners(container) {
       const patient = getPatient(patientsState.viewingId);
       if (!patient) return;
       const baseName = `patient_${String(patient.firstName || '').trim()}_${String(patient.lastName || '').trim()}`.replace(/\s+/g, '_').replace(/[^\w\-]/g, '') || 'patient';
+
+      const appointments = getAppointments().filter((a) => a && a.patientId === patient.id);
+      const prescriptions = getPrescriptions().filter((p) => p && p.patientId === patient.id);
+      const lastAppointment = appointments
+        .filter((a) => a.date)
+        .slice()
+        .sort((a, b) => String(b.date).localeCompare(String(a.date)))[0];
+
       exportReportToPDF({
         filename: baseName,
         title: t('patientDetails') || t('patient') || 'Patient',
-        subtitle: `${String(patient.firstName || '').trim()} ${String(patient.lastName || '').trim()}`.trim(),
-        fields: [
-          { label: t('firstName'), value: patient.firstName },
-          { label: t('lastName'), value: patient.lastName },
-          { label: t('email'), value: patient.email },
-          { label: t('phone'), value: patient.phone },
-          { label: t('bloodGroup'), value: patient.bloodGroup },
-          { label: t('registrationDate'), value: patient.registrationDate || '' },
-        ]
+        headerSubtitle: 'Hospital Backoffice System',
+        sections: [
+          {
+            title: t('personalInformation') || 'Personal Information',
+            fields: [
+              { label: t('fullName') || 'Full Name', value: `${String(patient.firstName || '').trim()} ${String(patient.lastName || '').trim()}`.trim() },
+              { label: t('gender'), value: patient.gender },
+              { label: t('dateOfBirth'), value: App.Services.Utils.formatDateDMY(patient.dateOfBirth) },
+              { label: t('bloodGroup'), value: patient.bloodGroup },
+            ],
+          },
+          {
+            title: t('contactInformation') || 'Contact Information',
+            fields: [
+              { label: t('phone'), value: patient.phone },
+              { label: t('email'), value: patient.email },
+              { label: t('address'), value: patient.address },
+            ],
+          },
+          {
+            title: t('statistics') || 'Statistics',
+            fields: [
+              { label: t('registrationDate'), value: patient.registrationDate || '' },
+              { label: t('appointments') || 'Appointments', value: appointments.length },
+              { label: t('prescriptions') || 'Prescriptions', value: prescriptions.length },
+              { label: t('lastAppointment') || 'Last Appointment', value: lastAppointment ? App.Services.Utils.formatDateDMY(lastAppointment.date) : '-' },
+            ],
+          },
+        ],
       });
     });
   }

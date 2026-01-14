@@ -6,6 +6,8 @@
   function deleteDoctor(id) { return App.Services.Data.deleteDoctor(id); }
   function getServices() { return App.Services.Data.getServices(); }
   function getService(id) { return App.Services.Data.getService(id); }
+  function getAppointments() { return App.Services.Data.getAppointments(); }
+  function getPrescriptions() { return App.Services.Data.getPrescriptions(); }
   function t(key) { return App.Services.I18n.t(key); }
   function exportToCSV(data, filename, columns) { return App.Services.Utils.exportToCSV(data, filename, columns); }
   function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
@@ -731,18 +733,45 @@
              if (doctor) {
                  const baseName = `${String(doctor.firstName || '').trim()}_${String(doctor.lastName || '').trim()}`.replace(/\s+/g, '_').replace(/[^\w\-]/g, '') || 'doctor';
                  const service = doctor.serviceId ? getService(doctor.serviceId) : null;
+
+                 const appointments = getAppointments().filter((a) => a && a.doctorId === doctor.id);
+                 const prescriptions = getPrescriptions().filter((p) => p && p.doctorId === doctor.id);
+                 const statusCount = (status) => appointments.filter((a) => a.status === status).length;
+                 const today = new Date().toISOString().split('T')[0];
+                 const upcoming = appointments.filter((a) => a.date && a.date >= today && a.status === 'scheduled').length;
+
                  exportReportToPDF({
                    filename: baseName,
                    title: t('doctorDetails') || t('doctor') || 'Doctor',
-                   subtitle: `${String(doctor.firstName || '').trim()} ${String(doctor.lastName || '').trim()}`.trim(),
-                   fields: [
-                     { label: t('firstName'), value: doctor.firstName },
-                     { label: t('lastName'), value: doctor.lastName },
-                     { label: t('email'), value: doctor.email },
-                     { label: t('phone'), value: doctor.phone },
-                     { label: t('service'), value: service ? service.name : (doctor.serviceId || '') },
-                     { label: t('specialty'), value: doctor.specialty },
-                   ]
+                   headerSubtitle: 'Hospital Backoffice System',
+                   sections: [
+                     {
+                       title: t('personalInformation') || 'Personal Information',
+                       fields: [
+                         { label: t('fullName') || 'Full Name', value: `${String(doctor.firstName || '').trim()} ${String(doctor.lastName || '').trim()}`.trim() },
+                         { label: t('phone'), value: doctor.phone },
+                         { label: t('email'), value: doctor.email },
+                       ],
+                     },
+                     {
+                       title: t('professionalInformation') || 'Professional Information',
+                       fields: [
+                         { label: t('service'), value: service ? service.name : (doctor.serviceId || '') },
+                         { label: t('specialty'), value: doctor.specialty },
+                       ],
+                     },
+                     {
+                       title: t('statistics') || 'Statistics',
+                       fields: [
+                         { label: t('appointments') || 'Appointments', value: appointments.length },
+                         { label: t('scheduled') || 'Scheduled', value: statusCount('scheduled') },
+                         { label: t('completed') || 'Completed', value: statusCount('completed') },
+                         { label: t('cancelled') || 'Cancelled', value: statusCount('cancelled') },
+                         { label: t('upcoming') || 'Upcoming', value: upcoming },
+                         { label: t('prescriptions') || 'Prescriptions', value: prescriptions.length },
+                       ],
+                     },
+                   ],
                  });
              }
         });
