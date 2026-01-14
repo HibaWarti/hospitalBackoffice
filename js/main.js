@@ -47,7 +47,7 @@ function renderLogin() {
             <span id="login-lang-flag" class="sm:hidden flex items-center"></span>
           </button>
 
-          <div id="login-lang-menu" class="hidden absolute right-0 mt-2 w-40 rounded-lg border border-border bg-card text-foreground shadow-md z-50">
+          <div id="login-lang-menu" class="hidden absolute right-0 mt-2 w-40 rounded-lg border border-border bg-card text-foreground shadow-md z-[1100]">
             ${App.Services.I18n.languages
               .map(
                 (lang) => `
@@ -270,7 +270,7 @@ function renderShell(user) {
                 <span id="lang-label" class="hidden sm:flex items-center gap-2"></span>
                 <span id="lang-flag" class="sm:hidden flex items-center"></span>
               </button>
-              <div id="lang-menu" class="hidden absolute right-0 mt-2 w-40 rounded-lg border border-border bg-card text-foreground shadow-md z-50">
+              <div id="lang-menu" class="hidden absolute right-0 mt-2 w-40 rounded-lg border border-border bg-card text-foreground shadow-md z-[1100]">
                 ${languages
                   .map(
                     (lang) => `
@@ -347,6 +347,10 @@ function renderShell(user) {
     sidebar.classList.remove("fixed", "inset-0", "z-[1002]", "w-full");
     sidebar.classList.add("w-64");
     globalOverlay?.classList.add("hidden");
+    if (globalOverlay) {
+      globalOverlay.style.top = "";
+      globalOverlay.style.height = "";
+    }
     document.body.style.overflow = "";
     updateHeaderLayout();
   };
@@ -357,6 +361,13 @@ function renderShell(user) {
     sidebar.classList.add("fixed", "inset-0", "z-[1002]", "w-full");
     sidebar.classList.remove("w-64");
     globalOverlay?.classList.remove("hidden");
+    if (globalOverlay) {
+      const headerH = header?.offsetHeight || 0;
+      if (headerH) {
+        globalOverlay.style.top = `${headerH}px`;
+        globalOverlay.style.height = `calc(100% - ${headerH}px)`;
+      }
+    }
     document.body.style.overflow = "hidden";
     updateHeaderLayout();
   };

@@ -7,6 +7,7 @@ function getPrescriptions() { return App.Services.Data.getPrescriptions(); }
 
  function t(key) { return App.Services.I18n.t(key); }
  function exportToPDF(data, filename, title, columns) { return App.Services.Utils.exportToPDF(data, filename, title, columns); }
+ function exportReportToPDF(options) { return App.Services.Utils.exportReportToPDF(options); }
 
  const dashboardCharts = {
   patientsByService: null,
@@ -236,17 +237,43 @@ function renderDashboard(container, baseData, currentLang) {
       const now = new Date();
       const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
 
-      // 1) Stats table
       const statsRows = stats.map((s) => ({ label: s.key, value: s.value }));
-      exportToPDF(
-        statsRows,
-        `dashboard_report_${ts}`,
-        t('dashboard') || 'Dashboard',
-        [
-          { key: 'label', header: t('metric') || 'Metric' },
-          { key: 'value', header: t('value') || 'Value' },
-        ]
-      );
+      const topServices = patientsByService
+        .slice()
+        .sort((a, b) => (b.count || 0) - (a.count || 0))
+        .slice(0, 5);
+      const topSpecialties = doctorsBySpecialty
+        .slice()
+        .sort((a, b) => (b.count || 0) - (a.count || 0))
+        .slice(0, 5);
+
+      exportReportToPDF({
+        filename: `dashboard_report_${ts}`,
+        title: t('dashboardReport') || (t('dashboard') || 'Dashboard'),
+        headerSubtitle: 'Hospital Backoffice System',
+        sections: [
+          {
+            title: t('keyMetrics') || 'Key Metrics',
+            fields: statsRows.map((r) => ({ label: r.label, value: r.value })),
+          },
+          {
+            title: t('appointmentsByStatus') || 'Appointments by Status',
+            fields: [
+              { label: t('scheduled') || 'Scheduled', value: statusCounts.scheduled },
+              { label: t('completed') || 'Completed', value: statusCounts.completed },
+              { label: t('cancelled') || 'Cancelled', value: statusCounts.cancelled },
+            ],
+          },
+          {
+            title: t('topServices') || 'Top Services',
+            fields: topServices.map((s) => ({ label: s.name, value: s.count })),
+          },
+          {
+            title: t('topSpecialties') || 'Top Specialties',
+            fields: topSpecialties.map((s) => ({ label: s.specialty, value: s.count })),
+          },
+        ],
+      });
     });
   }
 

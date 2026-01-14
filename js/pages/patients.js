@@ -746,6 +746,7 @@ function attachListeners(container) {
       const overlay = document.getElementById("global-overlay");
       overlay?.classList.remove("hidden");
     } else if (action === "view") {
+      patientsState.viewingId = id;
       const content = container.querySelector("#patient-details-content");
       content.innerHTML = `
         <div class="grid grid-cols-2 gap-4 text-sm">
